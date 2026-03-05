@@ -1,12 +1,10 @@
 """Unit tests for app/storage.py."""
 
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from app.storage import Listing, init_db, is_known, mark_notified, get_unnotified, save_listing
+from app.storage import Listing, get_unnotified, init_db, is_known, mark_notified, save_listing
 
 
 def _make_listing(

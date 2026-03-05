@@ -3,8 +3,6 @@
 import smtplib
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from app.mailer import send_notification
 from app.storage import Listing
 
@@ -31,7 +29,11 @@ def test_send_notification_no_listings():
 
 
 def test_send_notification_missing_credentials():
-    with patch("app.mailer.GMAIL_USER", ""), patch("app.mailer.GMAIL_APP_PASSWORD", ""), patch("app.mailer.EMAIL_TO", ""):
+    with (
+        patch("app.mailer.GMAIL_USER", ""),
+        patch("app.mailer.GMAIL_APP_PASSWORD", ""),
+        patch("app.mailer.EMAIL_TO", ""),
+    ):
         result = send_notification([_make_listing()])
     assert result is False
 

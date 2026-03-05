@@ -11,10 +11,11 @@ from pathlib import Path
 # Ensure the project root is on the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from datetime import UTC, datetime
+
 from app.config import EMAIL_TO, GMAIL_APP_PASSWORD, GMAIL_USER
 from app.mailer import send_notification
 from app.storage import Listing
-from datetime import datetime, timezone
 
 
 def _make_test_listing() -> Listing:
@@ -29,7 +30,7 @@ def _make_test_listing() -> Listing:
         has_pool=True,
         source="Immoweb [TEST]",
         url="https://www.immoweb.be",
-        collected_at=datetime.now(timezone.utc).isoformat(),
+        collected_at=datetime.now(UTC).isoformat(),
     )
 
 
@@ -48,7 +49,7 @@ def main() -> None:
         sys.exit(1)
 
     listing = _make_test_listing()
-    print(f"Sending test email with 1 mock listing...")
+    print("Sending test email with 1 mock listing...")
     success = send_notification([listing])
 
     if success:
