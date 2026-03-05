@@ -36,7 +36,9 @@ REQUIRE_POOL: bool = os.getenv("REQUIRE_POOL", "true").lower() == "true"
 # === Active sites ===
 IMMO_SITES_ACTIVE: list[str] = _csv(
     "IMMO_SITES_ACTIVE",
-    "Immoweb,Zimmo,Immovlan,Immoscoop,Logic-Immo,Biddit,Realo,Trovit,eRowz,Century21",
+    "Immoweb,Zimmo,Immovlan,Immoscoop,Logic-Immo,Biddit,"
+    "ERA,REMAX,Dewaele,LatourPetit,Notaris,Trevi,"
+    "Realo,Trovit,eRowz,Century21,Sothebys,HomeAvenue,Vlan,Athena,ImmoNeuf",
 )
 
 # === Target cities ===
@@ -94,6 +96,9 @@ _INCLUDE_FR_DEFAULT = (
 _INCLUDE_NL_DEFAULT = (
     "open bebouwing,vrijstaande woning,alleenstaande woning,villa,open huis,4 gevels"
 )
+_INCLUDE_EN_DEFAULT = (
+    "detached house,detached villa,villa,4 facades,4-facade,single-family home,standalone house"
+)
 _EXCLUDE_FR_DEFAULT = (
     "appartement,studio,duplex,triplex,penthouse,rez-de-chaussée,rez-de-chaussee,"
     "immeuble à appartements,immeuble a appartements,maison mitoyenne,"
@@ -103,23 +108,42 @@ _EXCLUDE_NL_DEFAULT = (
     "appartement,studio,duplex,penthouse,rijwoning,"
     "gesloten bebouwing,halfopen bebouwing,2 gevels,3 gevels"
 )
+_EXCLUDE_EN_DEFAULT = (
+    "apartment,studio,duplex,penthouse,townhouse,terraced house,semi-detached,semi detached"
+)
 _POOL_FR_DEFAULT = "piscine,piscine extérieure,piscine chauffée,piscine privée,avec piscine"
 _POOL_NL_DEFAULT = "zwembad,verwarmd zwembad,privé zwembad,met zwembad"
+_POOL_EN_DEFAULT = "swimming pool,private pool,heated pool,outdoor pool,pool"
 
 INCLUSION_KEYWORDS_FR: list[str] = _csv("KEYWORDS_INCLUDE_FR", _INCLUDE_FR_DEFAULT)
 INCLUSION_KEYWORDS_NL: list[str] = _csv("KEYWORDS_INCLUDE_NL", _INCLUDE_NL_DEFAULT)
+INCLUSION_KEYWORDS_EN: list[str] = _csv("KEYWORDS_INCLUDE_EN", _INCLUDE_EN_DEFAULT)
 EXCLUSION_KEYWORDS_FR: list[str] = _csv("KEYWORDS_EXCLUDE_FR", _EXCLUDE_FR_DEFAULT)
 EXCLUSION_KEYWORDS_NL: list[str] = _csv("KEYWORDS_EXCLUDE_NL", _EXCLUDE_NL_DEFAULT)
+EXCLUSION_KEYWORDS_EN: list[str] = _csv("KEYWORDS_EXCLUDE_EN", _EXCLUDE_EN_DEFAULT)
 
-ALL_EXCLUSION_KEYWORDS: list[str] = EXCLUSION_KEYWORDS_FR + EXCLUSION_KEYWORDS_NL
+ALL_EXCLUSION_KEYWORDS: list[str] = EXCLUSION_KEYWORDS_FR + EXCLUSION_KEYWORDS_NL + EXCLUSION_KEYWORDS_EN
 
 POOL_KEYWORDS_FR: list[str] = _csv("KEYWORDS_POOL_FR", _POOL_FR_DEFAULT)
 POOL_KEYWORDS_NL: list[str] = _csv("KEYWORDS_POOL_NL", _POOL_NL_DEFAULT)
-ALL_POOL_KEYWORDS: list[str] = POOL_KEYWORDS_FR + POOL_KEYWORDS_NL
+POOL_KEYWORDS_EN: list[str] = _csv("KEYWORDS_POOL_EN", _POOL_EN_DEFAULT)
+ALL_POOL_KEYWORDS: list[str] = POOL_KEYWORDS_FR + POOL_KEYWORDS_NL + POOL_KEYWORDS_EN
 
-# Garden keywords (not configurable via .env — less critical)
+# Parking / garage keywords
+_PARKING_FR_DEFAULT = "garage,garage fermé,box,parking privé,parking couvert,carport,double garage"
+_PARKING_NL_DEFAULT = "garage,gesloten garage,carport,privé parking,overdekte parking,dubbele garage"
+_PARKING_EN_DEFAULT = "garage,parking,carport,private parking,indoor parking,double garage"
+
+REQUIRE_PARKING: bool = os.getenv("REQUIRE_PARKING", "true").lower() == "true"
+PARKING_KEYWORDS_FR: list[str] = _csv("KEYWORDS_PARKING_FR", _PARKING_FR_DEFAULT)
+PARKING_KEYWORDS_NL: list[str] = _csv("KEYWORDS_PARKING_NL", _PARKING_NL_DEFAULT)
+PARKING_KEYWORDS_EN: list[str] = _csv("KEYWORDS_PARKING_EN", _PARKING_EN_DEFAULT)
+ALL_PARKING_KEYWORDS: list[str] = PARKING_KEYWORDS_FR + PARKING_KEYWORDS_NL + PARKING_KEYWORDS_EN
+
+# Garden keywords
 GARDEN_KEYWORDS_FR: list[str] = ["jardin", "grand terrain", "terrasse", "espace extérieur"]
 GARDEN_KEYWORDS_NL: list[str] = ["tuin", "groot perceel", "terras", "buitenruimte"]
+GARDEN_KEYWORDS_EN: list[str] = ["garden", "large plot", "terrace", "outdoor space"]
 
 # === HTTP request settings ===
 REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "20"))
