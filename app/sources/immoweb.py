@@ -29,9 +29,10 @@ _SEARCH_URL = (
 class ImmowebSource(BaseSource):
     """Scraper for Immoweb.be — Belgium's largest property portal.
 
-    Immoweb is a React SPA — content is rendered client-side via XHR.
-    Uses Playwright (headless Chromium) to intercept the JSON API responses
-    made by the browser's JavaScript engine.
+    Immoweb is a React SPA protected by DataDome/CloudFront.
+    Uses Playwright with headless=False (visible Chrome) to bypass
+    the JavaScript challenge and intercept the JSON API responses.
+    For daily cron use — the rate limit resets between daily runs.
     """
 
     name = "Immoweb"
@@ -49,9 +50,16 @@ class ImmowebSource(BaseSource):
 
         try:
             with sync_playwright() as pw:
-                browser = pw.chromium.launch(headless=True)
+                # Use actual Chrome (not Chromium) with headless=False to bypass DataDome
+                # CloudFront/DataDome blocks headless Chromium; headed Chrome passes JS challenges
+                browser = pw.chromium.launch(
+                    headless=False,
+                    channel="chrome",
+                    args=["--disable-notifications", "--no-first-run"],
+                )
                 context = browser.new_context(
                     locale="fr-BE",
+                    viewport={"width": 1920, "height": 1080},
                     user_agent=(
                         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -60,21 +68,27 @@ class ImmowebSource(BaseSource):
                 )
                 page = context.new_page()
 
+                # Apply stealth patches to hide automation indicators
+                try:
+                    from playwright_stealth import Stealth
+                    Stealth().apply_stealth_sync(page)
+                    logger.debug("[Immoweb] Stealth mode applied")
+                except Exception as e:
+                    logger.debug("[Immoweb] Stealth not available: %s", e)
+
                 def _on_response(response):
                     """Intercept XHR responses that contain listing data."""
                     url = response.url
-                    is_api = "api/classifieds/search" in url
+                    is_api = "api/classifieds/search" in url or "classifieds/search" in url
                     is_search = "search" in url and "immoweb" in url and response.status == 200
                     if is_api or is_search:
                         ct = response.headers.get("content-type", "")
                         if "json" in ct:
-                            try:
+                            with contextlib.suppress(Exception):
                                 body = response.json()
                                 if isinstance(body, dict) and ("results" in body or "classifieds" in body):
                                     intercepted.append(body)
                                     logger.debug("[Immoweb] Intercepted API response from %s", url)
-                            except Exception:
-                                pass
 
                 page.on("response", _on_response)
 
@@ -83,13 +97,20 @@ class ImmowebSource(BaseSource):
                     logger.debug("[Immoweb] Loading page %d: %s", page_num, page_url)
                     try:
                         page.goto(page_url, wait_until="networkidle", timeout=30_000)
-                        time.sleep(2)  # let XHR settle
+                        time.sleep(4)  # Allow DataDome JS challenge to resolve
                     except Exception as exc:
                         logger.warning("[Immoweb] Page load timeout on page %d: %s", page_num, exc)
 
-                    # Also try to extract data from page's DOM
+                    # Check if we're blocked (challenge page has title "immoweb.be")
+                    page_title = page.title()
+                    if page_title.lower() in ("immoweb.be", "error: the request could not be satisfied"):
+                        logger.warning("[Immoweb] Bot detection triggered on page %d — skipping", page_num)
+                        break
+
+                    # Extract from rendered DOM
                     dom_listings = self._extract_from_dom(page)
                     listings.extend(dom_listings)
+                    logger.debug("[Immoweb] Page %d DOM extracted: %d listings", page_num, len(dom_listings))
 
                     if not dom_listings and page_num > 1:
                         break
@@ -173,6 +194,7 @@ class ImmowebSource(BaseSource):
 
                     text_lower = text.lower()
                     has_pool = "piscine" in text_lower or "zwembad" in text_lower or "swimming" in text_lower
+                    has_parking = self._detect_parking(text)
 
                     link_el = card.query_selector("a[href*='/classified/']")
                     href = link_el.get_attribute("href") if link_el else ""
@@ -195,6 +217,7 @@ class ImmowebSource(BaseSource):
                         bedrooms=bedrooms,
                         area=area,
                         has_pool=has_pool,
+                        has_parking=has_parking,
                         source=self.name,
                         url=href,
                         collected_at=self._now_iso(),
@@ -234,6 +257,12 @@ class ImmowebSource(BaseSource):
                 or "piscine" in title.lower()
                 or "zwembad" in title.lower()
             )
+            has_parking = bool(
+                prop.get("hasGarage")
+                or prop.get("parkingCountIndoor", 0)
+                or prop.get("parkingCountOutdoor", 0)
+                or self._detect_parking(title)
+            )
 
             url = item.get("url", "") or f"https://www.immoweb.be/en/classified/{native_id}"
             if url and not url.startswith("http"):
@@ -252,6 +281,7 @@ class ImmowebSource(BaseSource):
                 bedrooms=bedrooms,
                 area=area,
                 has_pool=has_pool,
+                has_parking=has_parking,
                 source=self.name,
                 url=url,
                 collected_at=self._now_iso(),

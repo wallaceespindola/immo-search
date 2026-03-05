@@ -25,6 +25,7 @@ class Listing:
     bedrooms: int
     area: float | None  # in m², optional
     has_pool: bool
+    has_parking: bool
     source: str  # source site name
     url: str
     collected_at: str  # ISO 8601 datetime string
@@ -67,6 +68,7 @@ def init_db() -> None:
                 bedrooms INTEGER NOT NULL,
                 area REAL,
                 has_pool INTEGER NOT NULL DEFAULT 0,
+                has_parking INTEGER NOT NULL DEFAULT 0,
                 source TEXT NOT NULL,
                 url TEXT,
                 collected_at TEXT NOT NULL,
@@ -77,6 +79,10 @@ def init_db() -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_listings_source ON listings(source)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_listings_notified ON listings(notified)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_listings_collected_at ON listings(collected_at)")
+        # Migrate: add has_parking column if it doesn't exist yet
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(listings)")}
+        if "has_parking" not in cols:
+            conn.execute("ALTER TABLE listings ADD COLUMN has_parking INTEGER NOT NULL DEFAULT 0")
         conn.commit()
     logger.debug("Database initialized at %s", STATE_DB)
 
@@ -96,11 +102,13 @@ def save_listing(listing: Listing) -> bool:
         conn.execute(
             """
             INSERT INTO listings
-                (id, title, price, city, address, bedrooms, area, has_pool, source, url, collected_at, notified)
+                (id, title, price, city, address, bedrooms, area,
+                 has_pool, has_parking, source, url, collected_at, notified)
             VALUES
-                (:id, :title, :price, :city, :address, :bedrooms, :area, :has_pool, :source, :url, :collected_at, 0)
+                (:id, :title, :price, :city, :address, :bedrooms, :area,
+                 :has_pool, :has_parking, :source, :url, :collected_at, 0)
             """,
-            {**asdict(listing), "has_pool": int(listing.has_pool)},
+            {**asdict(listing), "has_pool": int(listing.has_pool), "has_parking": int(listing.has_parking)},
         )
         conn.commit()
     logger.debug("Saved new listing: %s from %s", listing.id, listing.source)
@@ -146,6 +154,7 @@ def _row_to_listing(row: sqlite3.Row) -> Listing:
         bedrooms=row["bedrooms"],
         area=row["area"],
         has_pool=bool(row["has_pool"]),
+        has_parking=bool(row["has_parking"]),
         source=row["source"],
         url=row["url"] or "",
         collected_at=row["collected_at"],

@@ -74,6 +74,7 @@ class ZimmoSource(BaseSource):
 
                 text_lower = card.get_text().lower()
                 has_pool = "piscine" in text_lower or "zwembad" in text_lower
+                has_parking = self._detect_parking(card.get_text())
 
                 native_id = ""
                 if url:
@@ -94,6 +95,7 @@ class ZimmoSource(BaseSource):
                     bedrooms=bedrooms,
                     area=None,
                     has_pool=has_pool,
+                    has_parking=has_parking,
                     source=self.name,
                     url=url,
                     collected_at=self._now_iso(),

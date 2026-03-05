@@ -71,6 +71,7 @@ class LogicImmoSource(BaseSource):
 
                 text_lower = text.lower()
                 has_pool = "piscine" in text_lower or "zwembad" in text_lower
+                has_parking = self._detect_parking(text)
 
                 if not self._in_target_area(None, city):
                     continue
@@ -90,6 +91,7 @@ class LogicImmoSource(BaseSource):
                     bedrooms=bedrooms,
                     area=area,
                     has_pool=has_pool,
+                    has_parking=has_parking,
                     source=self.name,
                     url=url,
                     collected_at=self._now_iso(),

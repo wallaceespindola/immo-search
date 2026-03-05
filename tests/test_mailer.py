@@ -17,6 +17,7 @@ def _make_listing(listing_id: str = "test:1") -> Listing:
         bedrooms=5,
         area=280.0,
         has_pool=True,
+        has_parking=True,
         source="Immoweb",
         url="https://www.immoweb.be/en/classified/12345",
         collected_at="2024-01-01T07:00:00+00:00",

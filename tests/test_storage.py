@@ -13,6 +13,7 @@ def _make_listing(
     city: str = "Wavre",
     bedrooms: int = 4,
     has_pool: bool = True,
+    has_parking: bool = True,
 ) -> Listing:
     return Listing(
         id=listing_id,
@@ -23,6 +24,7 @@ def _make_listing(
         bedrooms=bedrooms,
         area=250.0,
         has_pool=has_pool,
+        has_parking=has_parking,
         source="TestSource",
         url="https://example.com/1",
         collected_at="2024-01-01T07:00:00+00:00",
