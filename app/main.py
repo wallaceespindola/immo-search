@@ -6,7 +6,7 @@ Main orchestrator: fetch → deduplicate → persist → report → notify
 import csv
 import logging
 import sys
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from app.config import IMMO_SITES_ACTIVE, LOGS_DIR, MAX_PRICE, MIN_BEDROOMS, OUTPUT_DIR, TARGET_CITIES
@@ -51,7 +51,8 @@ _HTML_REPORT_TEMPLATE = """<!DOCTYPE html>
   .price {{ font-weight: bold; color: #1a5276; }}
   a {{ color: #1a5276; }}
   .summary {{ background: #eaf4fb; border-left: 4px solid #1a5276; padding: 12px 16px; margin: 16px 0; }}
-  .filters {{ background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; font-size: 0.9em; }}
+  .filters {{ background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px;
+             margin: 16px 0; font-size: 0.9em; }}
 </style>
 </head>
 <body>
@@ -103,16 +104,16 @@ _ROW_TEMPLATE = """
 
 def _generate_html_report(listings: list[Listing], report_date: date) -> Path:
     rows = ""
-    for l in listings:
+    for item in listings:
         rows += _ROW_TEMPLATE.format(
-            title=l.title,
-            price=l.price,
-            city=l.city,
-            bedrooms=l.bedrooms,
-            area=f"{l.area:.0f} m²" if l.area else "—",
-            pool="🏊 Oui" if l.has_pool else "Non",
-            source=l.source,
-            url=l.url,
+            title=item.title,
+            price=item.price,
+            city=item.city,
+            bedrooms=item.bedrooms,
+            area=f"{item.area:.0f} m²" if item.area else "—",
+            pool="🏊 Oui" if item.has_pool else "Non",
+            source=item.source,
+            url=item.url,
         )
 
     html = _HTML_REPORT_TEMPLATE.format(
@@ -121,7 +122,7 @@ def _generate_html_report(listings: list[Listing], report_date: date) -> Path:
         min_bedrooms=MIN_BEDROOMS,
         max_price=MAX_PRICE,
         rows=rows,
-        datetime_str=datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC"),
+        datetime_str=datetime.now(UTC).strftime("%d/%m/%Y %H:%M UTC"),
     )
 
     path = OUTPUT_DIR / f"resultado_{report_date.isoformat()}.html"
@@ -135,22 +136,23 @@ def _generate_csv_report(listings: list[Listing], report_date: date) -> Path:
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["id", "title", "price", "city", "address", "bedrooms", "area", "has_pool", "source", "url", "collected_at"],
+            fieldnames=["id", "title", "price", "city", "address", "bedrooms",
+                        "area", "has_pool", "source", "url", "collected_at"],
         )
         writer.writeheader()
-        for l in listings:
+        for item in listings:
             writer.writerow({
-                "id": l.id,
-                "title": l.title,
-                "price": l.price,
-                "city": l.city,
-                "address": l.address,
-                "bedrooms": l.bedrooms,
-                "area": l.area or "",
-                "has_pool": "yes" if l.has_pool else "no",
-                "source": l.source,
-                "url": l.url,
-                "collected_at": l.collected_at,
+                "id": item.id,
+                "title": item.title,
+                "price": item.price,
+                "city": item.city,
+                "address": item.address,
+                "bedrooms": item.bedrooms,
+                "area": item.area or "",
+                "has_pool": "yes" if item.has_pool else "no",
+                "source": item.source,
+                "url": item.url,
+                "collected_at": item.collected_at,
             })
     logger.info("CSV report written: %s", path)
     return path
@@ -211,7 +213,7 @@ def run() -> None:
     if all_unnotified:
         success = send_notification(all_unnotified)
         if success:
-            mark_notified([l.id for l in all_unnotified])
+            mark_notified([item.id for item in all_unnotified])
             logger.info("Email sent and %d listings marked as notified.", len(all_unnotified))
         else:
             logger.warning("Email notification failed — listings will be retried next run.")

@@ -3,10 +3,10 @@
 import hashlib
 import logging
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
-from typing import Generator
+from datetime import UTC, datetime
 
 from app.config import STATE_DB
 
@@ -30,7 +30,10 @@ class Listing:
     collected_at: str  # ISO 8601 datetime string
 
     @classmethod
-    def make_id(cls, source: str, native_id: str | None, url: str | None, city: str, address: str, price: int, bedrooms: int) -> str:
+    def make_id(  # noqa: PLR0913
+        cls, source: str, native_id: str | None, url: str | None,
+        city: str, address: str, price: int, bedrooms: int,
+    ) -> str:
         """Generate a deterministic ID using deduplication priority rules."""
         if native_id:
             return f"{source}:{native_id}"
@@ -117,7 +120,7 @@ def mark_notified(listing_ids: list[str]) -> None:
     """Mark the given listings as notified."""
     if not listing_ids:
         return
-    notified_at = datetime.now(timezone.utc).isoformat()
+    notified_at = datetime.now(UTC).isoformat()
     with _get_conn() as conn:
         conn.executemany(
             "UPDATE listings SET notified = 1, notified_at = ? WHERE id = ?",

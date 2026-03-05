@@ -4,7 +4,7 @@ import logging
 import random
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -43,10 +43,13 @@ class BaseSource(ABC):
         try:
             logger.info("[%s] Starting search...", self.name)
             listings = self._fetch()
-            valid = [l for l in listings if self._is_valid(l)]
+            valid = [item for item in listings if self._is_valid(item)]
             if listings and not valid:
-                sample_cities = list({l.city for l in listings[:5]})
-                logger.debug("[%s] Filtered out all %d listings. Sample cities: %s", self.name, len(listings), sample_cities)
+                sample_cities = list({item.city for item in listings[:5]})
+                logger.debug(
+                    "[%s] Filtered out all %d listings. Sample cities: %s",
+                    self.name, len(listings), sample_cities,
+                )
             logger.info("[%s] Found %d matching listings (from %d raw)", self.name, len(valid), len(listings))
             return valid
         except Exception as exc:
@@ -86,7 +89,7 @@ class BaseSource(ABC):
         return BeautifulSoup(html, "lxml")
 
     def _now_iso(self) -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
     def _is_valid(self, listing: Listing) -> bool:
         """Validate listing against core criteria."""
@@ -95,10 +98,7 @@ class BaseSource(ABC):
         if listing.bedrooms < MIN_BEDROOMS:
             return False
         text = (listing.title + " " + listing.address + " " + listing.city).lower()
-        for kw in ALL_EXCLUSION_KEYWORDS:
-            if kw.lower() in text:
-                return False
-        return True
+        return all(kw.lower() not in text for kw in ALL_EXCLUSION_KEYWORDS)
 
     def _in_target_area(self, postal_code: str | None, city: str | None) -> bool:
         """Check if the property is in the target geographic area."""

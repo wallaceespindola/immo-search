@@ -29,7 +29,8 @@ _EMAIL_BODY_TEMPLATE = """
   body {{ font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: auto; padding: 20px; }}
   h1 {{ color: #1a5276; border-bottom: 2px solid #1a5276; padding-bottom: 8px; }}
   .summary {{ background: #eaf4fb; border-left: 4px solid #1a5276; padding: 12px 16px; margin: 16px 0; }}
-  .filters {{ background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; font-size: 0.9em; }}
+  .filters {{ background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px;
+             margin: 16px 0; font-size: 0.9em; }}
   .listing {{ border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin: 12px 0; }}
   .listing h3 {{ margin: 0 0 8px 0; color: #1a5276; }}
   .listing .price {{ font-size: 1.3em; font-weight: bold; color: #27ae60; }}
@@ -116,7 +117,7 @@ def send_notification(listings: list[Listing]) -> bool:
     today = date.today().strftime("%d/%m/%Y")
     subject = f"{count} New {'Property' if count == 1 else 'Properties'} — Brabant Wallon"
 
-    listings_html = "\n".join(_render_listing_html(l) for l in listings)
+    listings_html = "\n".join(_render_listing_html(listing) for listing in listings)
     cities_preview = ", ".join(TARGET_CITIES[:6]) + "..."
 
     body_html = _EMAIL_BODY_TEMPLATE.format(
