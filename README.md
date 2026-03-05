@@ -2,7 +2,7 @@
 
 > **Personal Real Estate Hunter — Brabant Wallon, Belgium**
 >
-> Automated daily monitoring of Belgian property websites.
+> Automated daily monitoring of 20 Belgian property websites.
 > Detects newly published detached houses with swimming pools matching strict criteria —
 > before the general market reacts.
 
@@ -21,7 +21,7 @@
 
 ## Overview
 
-**immo-search** is a local macOS automation tool that monitors 10 Belgian real estate websites daily
+**immo-search** is a local macOS automation tool that monitors **20 Belgian real estate websites** daily
 and sends an email alert when new properties matching your exact criteria appear on the market.
 
 | Feature | Details |
@@ -37,20 +37,43 @@ and sends an email alert when new properties matching your exact criteria appear
 
 ---
 
-## Monitored Sources
+## Monitored Sources — 20 Belgian Sites
 
-| Tier | Site | Description |
+### Tier 1 — Core market coverage
+
+| Site | Description | Method |
 |---|---|---|
-| ⭐ Tier 1 | **Immoweb** | Belgium's largest property portal |
-| ⭐ Tier 1 | **Zimmo** | Major Belgian portal |
-| ⭐ Tier 1 | **Immovlan** | Major Belgian portal |
-| 🔸 Tier 2 | **Immoscoop** | Opportunity aggregator |
-| 🔸 Tier 2 | **Logic-Immo** | French/Belgian portal |
-| 🔸 Tier 2 | **Biddit** | Online property auctions |
-| 🔹 Tier 3 | **Realo** | National aggregator |
-| 🔹 Tier 3 | **Trovit** | Pan-European aggregator |
-| 🔹 Tier 3 | **eRowz** | Belgian classifieds aggregator |
-| 🔹 Tier 3 | **Century21** | National agency network |
+| **Immoweb** | Belgium's largest property portal | Playwright (headed Chrome) |
+| **Zimmo** | Major Belgian portal | HTML scraping |
+| **Immovlan** | Major Belgian portal | HTML scraping |
+
+### Tier 2 — Agencies and opportunity sources
+
+| Site | Description | Method |
+|---|---|---|
+| **Immoscoop** | Opportunity aggregator | HTML scraping |
+| **Logic-Immo** | French-Belgian portal | HTML scraping |
+| **Biddit** | Online property auctions | HTML scraping |
+| **ERA Belgium** | Major international agency network | HTML scraping |
+| **RE/MAX Belgium** | International franchise network | HTML scraping |
+| **Dewaele** | One of Belgium's largest groups | HTML scraping |
+| **Latour & Petit** | Premium Wallonia agency (BW focus) | HTML scraping |
+| **Notaris** | Belgian Notary Federation (official) | JSON API + HTML |
+| **Trevi** | Belgian agency active in Wallonia | HTML scraping |
+
+### Tier 3 — Aggregators, luxury & classifieds
+
+| Site | Description | Method |
+|---|---|---|
+| **Realo** | National property aggregator | HTML scraping |
+| **Trovit** | Pan-European aggregator | HTML scraping |
+| **eRowz** | Belgian classifieds aggregator | HTML scraping |
+| **Century21** | National agency network | HTML scraping |
+| **Sotheby's** | Luxury segment | HTML scraping |
+| **HomeAvenue** | Belgian property portal | HTML scraping |
+| **Vlan** | Belgian classifieds platform | HTML scraping |
+| **Athena Immo** | Premium Wallonia agency | HTML scraping |
+| **ImmoNeuf** | New-build / VEFA portal | HTML scraping |
 
 ---
 
@@ -64,17 +87,28 @@ immo-search/
 │   ├── storage.py       # SQLite deduplication and state
 │   ├── mailer.py        # Gmail SMTP notification
 │   └── sources/
-│       ├── base.py      # Abstract base scraper
-│       ├── immoweb.py   # Tier 1 scrapers
-│       ├── zimmo.py
-│       ├── immovlan.py
-│       ├── immoscoop.py # Tier 2 scrapers
-│       ├── logicimmo.py
-│       ├── biddit.py
-│       ├── realo.py     # Tier 3 aggregators
-│       ├── trovit.py
-│       ├── erowz.py
-│       └── century21.py
+│       ├── base.py           # Abstract base scraper
+│       ├── immoweb.py        # Tier 1 — Playwright SPA scraper
+│       ├── zimmo.py          # Tier 1
+│       ├── immovlan.py       # Tier 1
+│       ├── immoscoop.py      # Tier 2
+│       ├── logicimmo.py      # Tier 2
+│       ├── biddit.py         # Tier 2
+│       ├── era.py            # Tier 2
+│       ├── remax.py          # Tier 2
+│       ├── dewaele.py        # Tier 2
+│       ├── latouretpetit.py  # Tier 2
+│       ├── notaris.py        # Tier 2 — JSON API preferred
+│       ├── trevi.py          # Tier 2
+│       ├── realo.py          # Tier 3
+│       ├── trovit.py         # Tier 3
+│       ├── erowz.py          # Tier 3
+│       ├── century21.py      # Tier 3
+│       ├── sothebys.py       # Tier 3
+│       ├── homeavenue.py     # Tier 3
+│       ├── vlan.py           # Tier 3
+│       ├── athena.py         # Tier 3
+│       └── immoneuf.py       # Tier 3
 ├── tests/
 │   ├── test_config.py
 │   ├── test_storage.py
@@ -97,7 +131,7 @@ immo-search/
 launchd (07:30) → run.sh → app/main.py
     │
     ├── init_db()                    # Ensure SQLite schema
-    ├── [for each source]
+    ├── [for each of 20 sources]
     │   └── source.fetch_listings()  # HTTP → parse → validate
     ├── dedup + save_listing()       # Skip known IDs
     ├── generate_html_report()       # output/resultado_YYYY-MM-DD.html
@@ -105,6 +139,85 @@ launchd (07:30) → run.sh → app/main.py
     ├── send_notification()          # Gmail SMTP
     └── mark_notified()              # Prevent re-sending
 ```
+
+---
+
+## Scheduling — macOS launchd
+
+The app runs automatically every day at **07:30** via macOS launchd (the macOS equivalent of cron).
+
+### Schedule
+
+```
+Every day at 07:30 local time
+→ run.sh → uv run python -m app.main
+→ logs written to logs/launchd.log + logs/run.log
+```
+
+### Install the scheduler
+
+```bash
+# Install (copies plist to ~/Library/LaunchAgents and loads it)
+make install-scheduler
+
+# Verify it's loaded
+launchctl list | grep immo
+
+# Uninstall
+make uninstall-scheduler
+```
+
+### Manual trigger (run now)
+
+```bash
+launchctl start com.immo-search
+```
+
+### Check scheduler status
+
+```bash
+# Is it loaded?
+launchctl list | grep immo
+
+# Check output logs
+tail -f logs/launchd.log
+tail -f logs/launchd.error.log
+```
+
+### How launchd differs from cron
+
+| Feature | cron | launchd |
+|---|---|---|
+| Configuration | crontab syntax | XML plist file |
+| Missed runs | Skipped | Retried at next opportunity |
+| Log redirection | Manual | Built into plist |
+| macOS integration | Legacy | Native (Apple recommended) |
+| GUI | None | Activity Monitor + `launchctl` |
+
+The plist is at `com.immo-search.plist` and installed to `~/Library/LaunchAgents/`.
+
+---
+
+## Technology Stack
+
+| Category | Technology | Purpose |
+|---|---|---|
+| **Language** | Python 3.12+ | Core application |
+| **Package manager** | [uv](https://docs.astral.sh/uv/) | Fast dependency management and venv |
+| **Web scraping** | [requests](https://requests.readthedocs.io/) | HTTP client for standard sites |
+| **HTML parsing** | [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) + lxml | Parse HTML responses |
+| **SPA scraping** | [Playwright](https://playwright.dev/python/) | Headless/headed browser for JS-rendered sites |
+| **Bot evasion** | [playwright-stealth](https://pypi.org/project/playwright-stealth/) | Bypass DataDome/CloudFront on Immoweb |
+| **Storage** | [SQLite](https://www.sqlite.org/) | Persistent deduplication state |
+| **Email** | [smtplib](https://docs.python.org/3/library/smtplib.html) (Gmail SMTP) | HTML email notifications |
+| **Config** | [python-dotenv](https://pypi.org/project/python-dotenv/) | `.env` based configuration |
+| **Scheduling** | macOS launchd | Daily cron-equivalent at 07:30 |
+| **Linting** | [Ruff](https://docs.astral.sh/ruff/) | Fast Python linter |
+| **Formatting** | [Black](https://black.readthedocs.io/) | Code formatter |
+| **Type checking** | [mypy](https://mypy.readthedocs.io/) | Static type analysis |
+| **Testing** | [pytest](https://pytest.org/) | Unit and integration tests |
+| **CI/CD** | GitHub Actions | Automated testing on push/PR |
+| **Security** | CodeQL + Dependabot | Vulnerability scanning |
 
 ---
 
@@ -131,9 +244,15 @@ cd immo-search
 # Install dependencies
 make setup
 
+# Install Playwright browsers (required for Immoweb)
+uv run playwright install chromium
+
 # Configure credentials
 cp .env.example .env
 nano .env  # fill in your Gmail app password and target email
+
+# Install the daily scheduler
+make install-scheduler
 ```
 
 ### Gmail App Password
@@ -160,9 +279,10 @@ EMAIL_TO=your.email@gmail.com
 MAX_PRICE=600000
 MIN_BEDROOMS=4
 REQUIRE_POOL=true
+REQUIRE_PARKING=false   # set true to only show listings with garage/parking
 
-# Active sites (comma-separated)
-IMMO_SITES_ACTIVE=Immoweb,Zimmo,Immovlan,Immoscoop,Logic-Immo,Biddit,Realo,Trovit,eRowz,Century21
+# Active sites (comma-separated — remove any to disable)
+IMMO_SITES_ACTIVE=Immoweb,Zimmo,Immovlan,Immoscoop,Logic-Immo,Biddit,ERA,REMAX,...
 
 # Target cities and postal codes
 TARGET_CITIES_BW=Wavre,Limal,Waterloo,...
@@ -173,13 +293,19 @@ POSTAL_CODES_BW=1300,1310,1340,...
 POSTAL_CODES_NAMUR=5000,5030,...
 POSTAL_CODES_VBR=3001,3010,...
 
-# Inclusion / exclusion keywords (FR + NL)
+# Inclusion / exclusion keywords (FR + NL + EN)
 KEYWORDS_INCLUDE_FR=villa,maison 4 façades,...
 KEYWORDS_INCLUDE_NL=open bebouwing,vrijstaande woning,...
+KEYWORDS_INCLUDE_EN=detached house,villa,4 facades,...
 KEYWORDS_EXCLUDE_FR=appartement,maison mitoyenne,...
 KEYWORDS_EXCLUDE_NL=appartement,rijwoning,...
+KEYWORDS_EXCLUDE_EN=apartment,semi-detached,...
 KEYWORDS_POOL_FR=piscine,piscine privée,...
 KEYWORDS_POOL_NL=zwembad,privé zwembad,...
+KEYWORDS_POOL_EN=swimming pool,private pool,...
+KEYWORDS_PARKING_FR=garage,carport,...
+KEYWORDS_PARKING_NL=garage,privé parking,...
+KEYWORDS_PARKING_EN=garage,parking,carport,...
 ```
 
 ---
@@ -234,6 +360,8 @@ Every run produces:
 | `output/resultado_YYYY-MM-DD.html` | Visual HTML report with all new listings |
 | `output/resultado_YYYY-MM-DD.csv` | CSV export for spreadsheet analysis |
 | `logs/run.log` | Full execution log |
+| `logs/launchd.log` | Scheduler stdout |
+| `logs/launchd.error.log` | Scheduler stderr |
 | `state.sqlite` | Persistent dedup database |
 
 ---
