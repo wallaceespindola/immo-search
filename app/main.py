@@ -73,6 +73,7 @@ _HTML_REPORT_TEMPLATE = """<!DOCTYPE html>
       <th>Chambres</th>
       <th>Surface</th>
       <th>Piscine</th>
+      <th>Parking</th>
       <th>Source</th>
       <th>Lien</th>
     </tr>
@@ -96,6 +97,7 @@ _ROW_TEMPLATE = """
       <td>{bedrooms}</td>
       <td>{area}</td>
       <td class="pool">{pool}</td>
+      <td>{parking}</td>
       <td>{source}</td>
       <td><a href="{url}" target="_blank">Voir →</a></td>
     </tr>
@@ -112,6 +114,7 @@ def _generate_html_report(listings: list[Listing], report_date: date) -> Path:
             bedrooms=item.bedrooms,
             area=f"{item.area:.0f} m²" if item.area else "—",
             pool="🏊 Oui" if item.has_pool else "Non",
+            parking="🚗 Oui" if item.has_parking else "Non",
             source=item.source,
             url=item.url,
         )
@@ -137,7 +140,7 @@ def _generate_csv_report(listings: list[Listing], report_date: date) -> Path:
         writer = csv.DictWriter(
             f,
             fieldnames=["id", "title", "price", "city", "address", "bedrooms",
-                        "area", "has_pool", "source", "url", "collected_at"],
+                        "area", "has_pool", "has_parking", "source", "url", "collected_at"],
         )
         writer.writeheader()
         for item in listings:
@@ -150,6 +153,7 @@ def _generate_csv_report(listings: list[Listing], report_date: date) -> Path:
                 "bedrooms": item.bedrooms,
                 "area": item.area or "",
                 "has_pool": "yes" if item.has_pool else "no",
+                "has_parking": "yes" if item.has_parking else "no",
                 "source": item.source,
                 "url": item.url,
                 "collected_at": item.collected_at,

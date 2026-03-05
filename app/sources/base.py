@@ -11,12 +11,14 @@ from bs4 import BeautifulSoup
 
 from app.config import (
     ALL_EXCLUSION_KEYWORDS,
+    ALL_PARKING_KEYWORDS,
     DEFAULT_HEADERS,
     MAX_PRICE,
     MIN_BEDROOMS,
     REQUEST_DELAY_MAX,
     REQUEST_DELAY_MIN,
     REQUEST_TIMEOUT,
+    REQUIRE_PARKING,
     TARGET_POSTAL_CODES,
 )
 from app.storage import Listing
@@ -97,8 +99,15 @@ class BaseSource(ABC):
             return False
         if listing.bedrooms < MIN_BEDROOMS:
             return False
+        if REQUIRE_PARKING and not listing.has_parking:
+            return False
         text = (listing.title + " " + listing.address + " " + listing.city).lower()
         return all(kw.lower() not in text for kw in ALL_EXCLUSION_KEYWORDS)
+
+    def _detect_parking(self, text: str) -> bool:
+        """Return True if parking/garage keywords are found in the text."""
+        text_lower = text.lower()
+        return any(kw.lower() in text_lower for kw in ALL_PARKING_KEYWORDS)
 
     def _in_target_area(self, postal_code: str | None, city: str | None) -> bool:
         """Check if the property is in the target geographic area."""

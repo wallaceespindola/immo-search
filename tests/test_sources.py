@@ -6,7 +6,10 @@ from app.sources.base import BaseSource
 from app.storage import Listing
 
 
-def _make_mock_listing(source: str = "Test", price: int = 450_000, bedrooms: int = 4, has_pool: bool = True) -> Listing:
+def _make_mock_listing(
+    source: str = "Test", price: int = 450_000, bedrooms: int = 4,
+    has_pool: bool = True, has_parking: bool = True,
+) -> Listing:
     return Listing(
         id=f"{source}:1",
         title="Belle villa avec piscine 4 façades",
@@ -16,6 +19,7 @@ def _make_mock_listing(source: str = "Test", price: int = 450_000, bedrooms: int
         bedrooms=bedrooms,
         area=None,
         has_pool=has_pool,
+        has_parking=has_parking,
         source=source,
         url="https://example.com/1",
         collected_at="2024-01-01T07:00:00+00:00",
@@ -55,6 +59,7 @@ def test_base_source_validation_exclusion_keyword():
         bedrooms=4,
         area=None,
         has_pool=True,
+        has_parking=True,
         source="Test",
         url="https://example.com/2",
         collected_at="2024-01-01T07:00:00+00:00",

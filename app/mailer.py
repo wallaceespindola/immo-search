@@ -42,6 +42,8 @@ _EMAIL_BODY_TEMPLATE = """
                    padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 8px; }}
   .pool-badge {{ display: inline-block; background: #a9dfbf; color: #196f3d;
                  padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 4px; }}
+  .parking-badge {{ display: inline-block; background: #d5d8dc; color: #2c3e50;
+                    padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 4px; }}
   footer {{ margin-top: 30px; font-size: 0.8em; color: #999; text-align: center; }}
 </style>
 </head>
@@ -75,7 +77,7 @@ _EMAIL_BODY_TEMPLATE = """
 
 _LISTING_TEMPLATE = """
 <div class="listing">
-  <h3>{title} <span class="source-badge">{source}</span>{pool_badge}</h3>
+  <h3>{title} <span class="source-badge">{source}</span>{pool_badge}{parking_badge}</h3>
   <div class="price">€{price:,}</div>
   <div class="details">
     📍 {city}{address_part}<br>
@@ -88,12 +90,14 @@ _LISTING_TEMPLATE = """
 
 def _render_listing_html(listing: Listing) -> str:
     pool_badge = '<span class="pool-badge">🏊 Piscine</span>' if listing.has_pool else ""
+    parking_badge = '<span class="parking-badge">🚗 Parking</span>' if listing.has_parking else ""
     address_part = f" — {listing.address}" if listing.address else ""
     area_part = f" · {listing.area:.0f} m²" if listing.area else ""
     return _LISTING_TEMPLATE.format(
         title=listing.title,
         source=listing.source,
         pool_badge=pool_badge,
+        parking_badge=parking_badge,
         price=listing.price,
         city=listing.city,
         address_part=address_part,
