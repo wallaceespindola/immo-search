@@ -16,7 +16,7 @@ class DewaeleSource(BaseSource):
     name = "Dewaele"
     tier = 2
 
-    _SEARCH_URL = "https://www.dewaele.com/fr/acheter/maisons"
+    _SEARCH_URL = "https://www.dewaele.com/fr/a-vendre/tout/maisons"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

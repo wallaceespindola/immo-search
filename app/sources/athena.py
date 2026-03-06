@@ -16,7 +16,7 @@ class AthenaSource(BaseSource):
     name = "Athena"
     tier = 3
 
-    _SEARCH_URL = "https://www.athena-immo.be/fr/vente"
+    _SEARCH_URL = "https://www.athena-properties.be/fr/a-vendre"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
@@ -55,7 +55,7 @@ class AthenaSource(BaseSource):
                 link_el = card.select_one("a[href]")
                 url = link_el["href"] if link_el else ""
                 if url and not url.startswith("http"):
-                    url = f"https://www.athena-immo.be{url}"
+                    url = f"https://www.athena-properties.be{url}"
 
                 title_el = card.select_one("h2, h3, .property-title, .bien-titre")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"

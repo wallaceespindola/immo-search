@@ -20,8 +20,8 @@ class NotarisSource(BaseSource):
     name = "Notaris"
     tier = 2
 
-    _API_URL = "https://www.notaris.be/api/properties"
-    _SEARCH_URL = "https://www.notaris.be/fr/biens-immobiliers/a-vendre"
+    _API_URL = "https://immo.notaris.be/api/properties"
+    _SEARCH_URL = "https://immo.notaris.be/fr/biens-a-vendre"
 
     def _fetch(self) -> list[Listing]:
         # Try JSON API first
@@ -124,7 +124,7 @@ class NotarisSource(BaseSource):
             if url and not url.startswith("http"):
                 url = f"https://www.notaris.be{url}"
             if not url and native_id:
-                url = f"https://www.notaris.be/fr/bien/{native_id}"
+                url = f"https://immo.notaris.be/fr/bien/{native_id}"
 
             if not self._in_target_area(postal_code, city):
                 return None
@@ -160,7 +160,7 @@ class NotarisSource(BaseSource):
                 link_el = card.select_one("a[href]")
                 url = link_el["href"] if link_el else ""
                 if url and not url.startswith("http"):
-                    url = f"https://www.notaris.be{url}"
+                    url = f"https://immo.notaris.be{url}"
 
                 title_el = card.select_one("h2, h3, .property-title, .bien-title")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"

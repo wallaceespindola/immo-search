@@ -16,7 +16,7 @@ class Century21Source(BaseSource):
     name = "Century21"
     tier = 3
 
-    _SEARCH_URL = "https://www.century21.be/fr/find-a-property/"
+    _SEARCH_URL = "https://www.century21.be/fr/a-vendre/maison"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

@@ -16,7 +16,7 @@ class SothebysSource(BaseSource):
     name = "Sothebys"
     tier = 3
 
-    _SEARCH_URL = "https://www.sothebysrealty.be/fr/proprietes-a-vendre/"
+    _SEARCH_URL = "https://sothebysrealty.be/property/for-sale/"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

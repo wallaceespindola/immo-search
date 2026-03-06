@@ -20,7 +20,8 @@ class ImmoNeufSource(BaseSource):
     name = "ImmoNeuf"
     tier = 3
 
-    _SEARCH_URL = "https://www.immoneuf.be/fr/acheter/maisons"
+    # immoneuf.be has SSL certificate issues — use zimmo new construction search as alternative
+    _SEARCH_URL = "https://www.zimmo.be/fr/maisons-a-vendre/?filter=neuf"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
@@ -58,7 +59,7 @@ class ImmoNeufSource(BaseSource):
                 link_el = card.select_one("a[href]")
                 url = link_el["href"] if link_el else ""
                 if url and not url.startswith("http"):
-                    url = f"https://www.immoneuf.be{url}"
+                    url = f"https://www.zimmo.be{url}"
 
                 title_el = card.select_one("h2, h3, .property-title, .project-title")
                 title = title_el.get_text(strip=True) if title_el else "Maison neuve à vendre"

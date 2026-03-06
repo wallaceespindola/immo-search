@@ -20,7 +20,7 @@ class LatourEtPetitSource(BaseSource):
     name = "LatourPetit"
     tier = 2
 
-    _SEARCH_URL = "https://www.latouretpetit.be/fr/recherche"
+    _SEARCH_URL = "https://latouretpetit.be/nos-biens/vente"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

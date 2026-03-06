@@ -16,7 +16,7 @@ class ERASource(BaseSource):
     name = "ERA"
     tier = 2
 
-    _SEARCH_URL = "https://www.era.be/fr/proprietes-a-vendre/"
+    _SEARCH_URL = "https://www.era.be/fr/a-vendre"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

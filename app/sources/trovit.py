@@ -16,15 +16,13 @@ class TrovitSource(BaseSource):
     name = "Trovit"
     tier = 3
 
-    _SEARCH_URL = "https://maisons.trovit.be/index.php/cod.search_homes"
+    _SEARCH_URL = "https://www.trovit.be/maisons-a-vendre/brabant-wallon"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
         params = {
-            "type": "1",
-            "what": "maison piscine 4 chambres",
-            "where": "Brabant Wallon",
+            "what": "maison piscine",
             "max_price": MAX_PRICE,
             "rooms_from": MIN_BEDROOMS,
             "order_by": "datetime",
