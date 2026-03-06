@@ -1,9 +1,8 @@
 """Immoscoop source adapter — Tier 2."""
 
+import json
 import logging
-import re
 
-from app.config import MAX_PRICE, MIN_BEDROOMS
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -11,98 +10,99 @@ logger = logging.getLogger(__name__)
 
 
 class ImmoScoopSource(BaseSource):
-    """Scraper for Immoscoop.be — Tier 2 opportunity source."""
+    """Scraper for Immoscoop.be — Next.js SPA; listings extracted from __NEXT_DATA__ JSON."""
 
     name = "Immoscoop"
     tier = 2
 
     _SEARCH_URL = "https://www.immoscoop.be/fr/chercher/a-vendre/maison"
+    _BASE_URL = "https://www.immoscoop.be"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
-        params = {
-            "max_price": MAX_PRICE,
-            "min_rooms": MIN_BEDROOMS,
-            "has_pool": 1,
-            "sort": "date",
-        }
-
         for page in range(1, 3):
-            params["page"] = page
-            resp = self._get(self._SEARCH_URL, params=params)
+            resp = self._get(self._SEARCH_URL, params={"page": page})
             if resp is None:
                 break
 
             soup = self._parse_html(resp.text)
-            page_listings = self._parse_results(soup)
+            page_listings = self._parse_next_data(soup)
             if not page_listings:
                 break
             listings.extend(page_listings)
 
         return listings
 
-    def _parse_results(self, soup) -> list[Listing]:
+    def _parse_next_data(self, soup) -> list[Listing]:
         listings = []
-        # Cards are wrapped in <a href="/fr/a-vendre/..."> links
-        cards = soup.select("a[href*='/fr/a-vendre/'] [class*='property-card'], [class*='property-card']")
+        script_tag = soup.find("script", id="__NEXT_DATA__")
+        if not script_tag or not script_tag.string:
+            return []
 
-        for card in cards:
+        try:
+            page_data = json.loads(script_tag.string)
+        except Exception:
+            return []
+
+        # Listings are in dehydratedState.queries[-1].state.data.data
+        queries = page_data.get("props", {}).get("pageProps", {}).get("dehydratedState", {}).get("queries", [])
+        items = []
+        for q in queries:
+            data = q.get("state", {}).get("data", {})
+            if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
+                items = data["data"]
+                break
+
+        for item in items:
             try:
-                # Link is on the parent <a> element
-                link_el = card.parent if card.parent and card.parent.name == "a" else card.select_one("a[href]")
-                url = (link_el.get("href") or "") if link_el else ""
-                if url and not url.startswith("http"):
-                    url = f"https://www.immoscoop.be{url}"
-
-                title_el = card.select_one("[class*='title'], h2, h3")
-                title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
-
-                price_el = card.select_one("[class*='price']")
-                price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
-
-                # City from card text: "Handelsstraat 43 2910 Essen" → postal + city
-                text = card.get_text()
-                pc_match = re.search(r"\b(\d{4})\s+([A-Za-zÀ-ÿ\s-]+)", text)
-                postal_code = pc_match.group(1) if pc_match else ""
-                city = pc_match.group(2).strip() if pc_match else ""
-
-                bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?)", text, re.I)
-                bedrooms = int(bed_match.group(1)) if bed_match else 0
-
-                area_match = re.search(r"(\d+)\s*m²", text, re.I)
-                area = float(area_match.group(1)) if area_match else None
-
-                text_lower = text.lower()
-                has_pool = "piscine" in text_lower or "zwembad" in text_lower
-                has_parking = self._detect_parking(text)
-
-                if not self._in_target_area(postal_code, city):
-                    continue
-
-                native_id = ""
-                if url:
-                    m = re.search(r"/(\d+)/?(?:\?|$)", url)
-                    native_id = m.group(1) if m else ""
-
-                listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)
-                listings.append(
-                    Listing(
-                        id=listing_id,
-                        title=title,
-                        price=price,
-                        city=city,
-                        address="",
-                        bedrooms=bedrooms,
-                        area=area,
-                        has_pool=has_pool,
-                        has_parking=has_parking,
-                        source=self.name,
-                        url=url,
-                        collected_at=self._now_iso(),
-                    )
-                )
+                listing = self._parse_item(item)
+                if listing:
+                    listings.append(listing)
             except Exception as exc:
                 logger.debug("[%s] Parse error: %s", self.name, exc)
 
         return listings
+
+    def _parse_item(self, item: dict) -> Listing | None:
+        native_id = str(item.get("id", "") or item.get("canonicalId", ""))
+        price_raw = item.get("price", {}).get("slug", "0")
+        price = int(price_raw) if str(price_raw).isdigit() else self._clean_price(str(price_raw))
+
+        addr = item.get("address", {})
+        postal_code = str(addr.get("postalCode", "") or "")
+        city = (addr.get("city", {}) or {}).get("label", "") or (addr.get("municipality", {}) or {}).get("label", "")
+        city = city.strip().title()
+
+        features = {f["id"]: f.get("value", "") for f in item.get("features", [])}
+        bedrooms = self._clean_int(str(features.get("BedroomNumber", "") or ""))
+        area_raw = features.get("livableSurfaceArea") or features.get("LivableSurfaceArea")
+        area = float(area_raw) if area_raw else None
+
+        title = (item.get("title") or "Maison à vendre") if isinstance(item.get("title"), str) else "Maison à vendre"
+        has_pool = "piscine" in title.lower() or "zwembad" in title.lower()
+        has_parking = self._detect_parking(title)
+
+        if not self._in_target_area(postal_code, city):
+            return None
+
+        # Build URL from city slug and id
+        city_slug = (addr.get("city", {}) or {}).get("slug", "") or city.lower().replace(" ", "-")
+        path = f"{city_slug}/{native_id}" if city_slug else native_id
+        url = f"{self._BASE_URL}/fr/a-vendre/{path}"
+
+        listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)
+        return Listing(
+            id=listing_id,
+            title=title,
+            price=price,
+            city=city,
+            address=f"{addr.get('street', '')} {(addr.get('houseNumber') or {}).get('number', '')}".strip(),
+            bedrooms=bedrooms,
+            area=area,
+            has_pool=has_pool,
+            has_parking=has_parking,
+            source=self.name,
+            url=url,
+            collected_at=self._now_iso(),
+        )
