@@ -16,17 +16,15 @@ class TreviSource(BaseSource):
     name = "Trevi"
     tier = 2
 
-    _SEARCH_URL = "https://www.trevi.be/fr/acheter"
+    _SEARCH_URL = "https://www.trevi.be/fr/acheter-bien-immobilier"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
         params = {
             "type": "maison",
-            "transaction": "vente",
             "prix_max": MAX_PRICE,
             "chambres_min": MIN_BEDROOMS,
-            "piscine": "oui",
             "tri": "date_desc",
         }
 
@@ -46,7 +44,7 @@ class TreviSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select("div.property-card, article.bien-item, li.listing-result, div.result-property")
+        cards = soup.select("div.card-estate, div.property-card, article.bien-item, li.listing-result")
 
         for card in cards:
             try:
@@ -55,15 +53,13 @@ class TreviSource(BaseSource):
                 if url and not url.startswith("http"):
                     url = f"https://www.trevi.be{url}"
 
-                title_el = card.select_one("h2, h3, .title, .property-type")
+                title_el = card.select_one(".card-estate__category, h2, h3, .title")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
 
-                price_el = card.select_one("[class*='price'], [class*='prix']")
+                price_el = card.select_one(".card-estate__price, [class*='price'], [class*='prix']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one(
-                    "[class*='city'], [class*='location'], [class*='commune'], [class*='locality']"
-                )
+                city_el = card.select_one(".card-estate__town, [class*='city'], [class*='commune']")
                 city = city_el.get_text(strip=True) if city_el else ""
 
                 text = card.get_text()
