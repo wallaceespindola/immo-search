@@ -16,7 +16,7 @@ class AthenaSource(BaseSource):
     name = "Athena"
     tier = 3
 
-    _SEARCH_URL = "https://www.athena-properties.be/fr/a-vendre"
+    _SEARCH_URL = "https://athena-properties.com/real-estate-branding-sales-letting"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

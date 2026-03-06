@@ -28,10 +28,20 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSource(ABC):
-    """Base class for all property listing scrapers."""
+    """Base class for all property listing scrapers.
+
+    Subclasses may set ``pool_filtered_in_url = True`` when the search URL
+    already restricts results to properties with a pool.  In that case the
+    ``_is_valid`` helper skips the pool check to avoid double-filtering.
+    When ``pool_filtered_in_url`` is False (the default for most agency
+    scrapers) the pool requirement is treated as advisory: listings are
+    included regardless of whether the card text mentions a pool, because
+    agency listing cards rarely expose amenity details.
+    """
 
     name: str = "unknown"
     tier: int = 3
+    pool_filtered_in_url: bool = False  # set True when URL already filters by pool
 
     def __init__(self) -> None:
         self._session = requests.Session()
@@ -100,12 +110,23 @@ class BaseSource(ABC):
         return datetime.now(UTC).isoformat()
 
     def _is_valid(self, listing: Listing) -> bool:
-        """Validate listing against core criteria."""
+        """Validate listing against core criteria.
+
+        Pool requirement is only enforced when ``pool_filtered_in_url=True``
+        (i.e. the search URL already requested pool properties) OR when the
+        listing card explicitly indicates a pool.  Agency sites that don't
+        expose pool info in listing cards are passed through so the user can
+        follow the link and check manually.
+        """
         if MAX_PRICE is not None and listing.price > MAX_PRICE:
             return False
-        if MIN_BEDROOMS is not None and listing.bedrooms < MIN_BEDROOMS:
+        # bedrooms=0 means "unknown" (card didn't show count) — pass through
+        if MIN_BEDROOMS is not None and listing.bedrooms > 0 and listing.bedrooms < MIN_BEDROOMS:
             return False
-        if REQUIRE_POOL and not listing.has_pool:
+        # Pool: hard-filter only when URL already filtered by pool (reliable signal).
+        # For agency scrapers, has_pool=False just means "not mentioned in card" —
+        # don't reject the listing; the user can check the detail page.
+        if REQUIRE_POOL and self.pool_filtered_in_url and not listing.has_pool:
             return False
         if REQUIRE_PARKING and not listing.has_parking:
             return False

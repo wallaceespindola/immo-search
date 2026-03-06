@@ -6,26 +6,38 @@ import logging
 import re
 import time
 
-from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL, TARGET_POSTAL_CODES
+from app.config import EPC_RATINGS, MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
 logger = logging.getLogger(__name__)
 
-# Postal codes to include in the Immoweb search URL (max ~25 for URL length)
-_SEARCH_POSTAL_CODES = ",".join(f"BE-{pc}" for pc in TARGET_POSTAL_CODES[:25])
+# Immoweb province codes for the target areas
+_PROVINCES = "NAMUR,FLEMISH_BRABANT,WALLOON_BRABANT"
+
+# EPC scores mapping (our labels → Immoweb codes)
+_EPC_MAP = {"excellent": "A++,A+,A", "good": "B", "poor": "C", "bad": "D"}
 
 
 def _build_search_url() -> str:
-    """Build the Immoweb search URL respecting optional config values."""
-    base = "https://www.immoweb.be/en/search/house/for-sale?countries=BE"
+    """Build the Immoweb search URL using the French search endpoint with full filter set."""
+    base = (
+        "https://www.immoweb.be/fr/recherche/maison/a-vendre"
+        f"?countries=BE&provinces={_PROVINCES}"
+        "&minFacadeCount=4&maxFacadeCount=10"  # detached houses only
+        "&isUnderOption=false"
+        "&orderBy=newest"
+    )
     if MAX_PRICE is not None:
         base += f"&maxPrice={MAX_PRICE}"
     if MIN_BEDROOMS is not None:
-        base += f"&minBedroomCount={MIN_BEDROOMS}"
+        base += f"&minBedroomCount={MIN_BEDROOMS}&maxBedroomCount=20"
     if REQUIRE_POOL:
         base += "&hasSwimmingPool=true"
-    base += f"&postalCodes={_SEARCH_POSTAL_CODES}&orderBy=newest"
+    # EPC filter
+    if EPC_RATINGS:
+        epc_codes = ",".join(c for r in EPC_RATINGS for c in _EPC_MAP.get(r, [r]).split(","))
+        base += f"&epcScores={epc_codes}"
     return base
 
 
@@ -40,6 +52,7 @@ class ImmowebSource(BaseSource):
 
     name = "Immoweb"
     tier = 1
+    pool_filtered_in_url = True  # URL passes hasSwimmingPool=true when REQUIRE_POOL
 
     def _fetch(self) -> list[Listing]:
         try:

@@ -17,6 +17,7 @@ class ImmovlanSource(BaseSource):
 
     name = "Immovlan"
     tier = 1
+    pool_filtered_in_url = True  # URL uses tags=hasswimmingpool when REQUIRE_POOL
 
     _SEARCH_URL = "https://immovlan.be/fr/immobilier"
 

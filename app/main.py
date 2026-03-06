@@ -128,14 +128,14 @@ def _generate_html_report(listings: list[Listing], report_date: date) -> Path:
         datetime_str=datetime.now(UTC).strftime("%d/%m/%Y %H:%M UTC"),
     )
 
-    path = OUTPUT_DIR / f"resultado_{report_date.isoformat()}.html"
+    path = OUTPUT_DIR / f"report_{report_date.isoformat()}.html"
     path.write_text(html, encoding="utf-8")
     logger.info("HTML report written: %s", path)
     return path
 
 
 def _generate_csv_report(listings: list[Listing], report_date: date) -> Path:
-    path = OUTPUT_DIR / f"resultado_{report_date.isoformat()}.csv"
+    path = OUTPUT_DIR / f"report_{report_date.isoformat()}.csv"
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,

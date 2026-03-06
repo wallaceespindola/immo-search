@@ -20,7 +20,7 @@ class EngelVolkersSource(BaseSource):
     name = "EngelVolkers"
     tier = 3
 
-    _SEARCH_URL = "https://www.engelvoelkers.com/be/fr/proprietes/"
+    _SEARCH_URL = "https://www.engelvoelkers.com/be/fr/propriete/res/vendre/immobilier"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

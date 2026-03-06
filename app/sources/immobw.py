@@ -44,14 +44,13 @@ class ImmoBWSource(BaseSource):
                 price_el = card.select_one(".PricesalesPrice, .product-price, [class*='price']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                # City from meet_info or gm-prop
-                city_el = card.select_one(".meet_info, .gm-prop, [class*='city'], [class*='location']")
-                city_raw = city_el.get_text(strip=True) if city_el else ""
-                pc_match = re.search(r"\b(\d{4})\b", city_raw)
-                postal_code = pc_match.group(1) if pc_match else ""
-                city = re.sub(r"\b\d{4}\b", "", city_raw).strip(" -,")
-
+                # City/postal from card text: "3090 OVERIJSE" or "1301 Bierges"
                 text = card.get_text()
+                # Stop city capture at newline or non-alpha characters
+                pc_match = re.search(r"\b(\d{4})\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ -]{1,30}?)(?=\s*[\n\r\d€]|$)", text)
+                postal_code = pc_match.group(1) if pc_match else ""
+                city = pc_match.group(2).strip().title() if pc_match else ""
+
                 bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?)", text, re.I)
                 bedrooms = int(bed_match.group(1)) if bed_match else 0
 
@@ -62,7 +61,7 @@ class ImmoBWSource(BaseSource):
                 has_pool = "piscine" in text_lower or "zwembad" in text_lower
                 has_parking = self._detect_parking(text)
 
-                if postal_code and not self._in_target_area(postal_code, city):
+                if not self._in_target_area(postal_code, city):
                     continue
 
                 native_id = ""

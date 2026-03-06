@@ -21,7 +21,7 @@ class NotarisSource(BaseSource):
     tier = 2
 
     _API_URL = "https://immo.notaris.be/api/properties"
-    _SEARCH_URL = "https://immo.notaris.be/fr/biens-a-vendre"
+    _SEARCH_URL = "https://immo.notaris.be/fr/biens-a-vendre-dans-la-province/brabant-wallon?province=WBR"
 
     def _fetch(self) -> list[Listing]:
         # Try JSON API first
@@ -147,7 +147,8 @@ class NotarisSource(BaseSource):
     def _parse_html_results(self, soup) -> list[Listing]:
         """Parse HTML search results from notaris.be."""
         listings = []
-        cards = soup.select("div.property-card, article.property, li.property-item, div.bien-item")
+        # Notaris uses <li class="property__item"> with link on the <a> wrapper
+        cards = soup.select("li.property__item, div.property-card, article.property")
 
         for card in cards:
             try:
@@ -156,14 +157,20 @@ class NotarisSource(BaseSource):
                 if url and not url.startswith("http"):
                     url = f"https://immo.notaris.be{url}"
 
-                title_el = card.select_one("h2, h3, .property-title, .bien-title")
+                title_el = card.select_one("h2, h3, .h3, .property-title")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
 
-                price_el = card.select_one("[class*='price'], [class*='prix']")
+                price_el = card.select_one(".property__item--price, [class*='price'], [class*='prix']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one("[class*='city'], [class*='commune'], [class*='locality']")
-                city = city_el.get_text(strip=True) if city_el else ""
+                # URL contains postal code and city: /fr/title/a-vendre/27-rue-X-1473-glabais/178300
+                postal_code = ""
+                city = ""
+                if url:
+                    pc_match = re.search(r"-(\d{4})-([a-z-]+)/\d+$", url)
+                    if pc_match:
+                        postal_code = pc_match.group(1)
+                        city = pc_match.group(2).replace("-", " ").title()
 
                 text = card.get_text()
                 bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?)", text, re.I)
@@ -176,7 +183,7 @@ class NotarisSource(BaseSource):
                 has_pool = "piscine" in text_lower or "zwembad" in text_lower
                 has_parking = self._detect_parking(text)
 
-                if not self._in_target_area(None, city):
+                if not self._in_target_area(postal_code, city):
                     continue
 
                 native_id = ""

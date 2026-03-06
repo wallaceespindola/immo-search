@@ -16,7 +16,7 @@ class ImmoScoopSource(BaseSource):
     name = "Immoscoop"
     tier = 2
 
-    _SEARCH_URL = "https://www.immoscoop.be/fr/vente/maison"
+    _SEARCH_URL = "https://www.immoscoop.be/fr/chercher/a-vendre/maison"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
@@ -44,26 +44,30 @@ class ImmoScoopSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select("div.property, article, li.listing-item")
+        # Cards are wrapped in <a href="/fr/a-vendre/..."> links
+        cards = soup.select("a[href*='/fr/a-vendre/'] [class*='property-card'], [class*='property-card']")
 
         for card in cards:
             try:
-                link_el = card.select_one("a[href*='/detail/'], a[href*='/annonce/']")
-                url = link_el["href"] if link_el else ""
+                # Link is on the parent <a> element
+                link_el = card.parent if card.parent and card.parent.name == "a" else card.select_one("a[href]")
+                url = (link_el.get("href") or "") if link_el else ""
                 if url and not url.startswith("http"):
                     url = f"https://www.immoscoop.be{url}"
 
-                title_el = card.select_one("h2, h3")
+                title_el = card.select_one("[class*='title'], h2, h3")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
 
                 price_el = card.select_one("[class*='price']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one("[class*='city'], [class*='location']")
-                city = city_el.get_text(strip=True) if city_el else ""
-
+                # City from card text: "Handelsstraat 43 2910 Essen" → postal + city
                 text = card.get_text()
-                bed_match = re.search(r"(\d+)\s*(?:ch|chambre|slaapkamer)", text, re.I)
+                pc_match = re.search(r"\b(\d{4})\s+([A-Za-zÀ-ÿ\s-]+)", text)
+                postal_code = pc_match.group(1) if pc_match else ""
+                city = pc_match.group(2).strip() if pc_match else ""
+
+                bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?)", text, re.I)
                 bedrooms = int(bed_match.group(1)) if bed_match else 0
 
                 area_match = re.search(r"(\d+)\s*m²", text, re.I)
@@ -73,7 +77,7 @@ class ImmoScoopSource(BaseSource):
                 has_pool = "piscine" in text_lower or "zwembad" in text_lower
                 has_parking = self._detect_parking(text)
 
-                if not self._in_target_area(None, city):
+                if not self._in_target_area(postal_code, city):
                     continue
 
                 native_id = ""

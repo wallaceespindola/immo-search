@@ -53,15 +53,17 @@ class LesViviersSource(BaseSource):
                 price_el = card.select_one(".priceshow, [class*='price']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                # City/locality from card text or URL
-                # URL format: /biens/acheter/19995-KRAAINEM-4-Bras-Charmante-villa
+                # Text format: "Nouveau Maison 1950 - KRAAINEM 2600m² 385m² 4 1.495.000€"
+                text = card.get_text(" ", strip=True)
+                # City appears after " - " (e.g. "Maison 1950 - KRAAINEM 2600m²")
                 city = ""
                 postal_code = ""
-                url_match = re.search(r"/acheter/\d+-([A-Z][A-Z-]+?)-\d+-", url)
-                if url_match:
-                    city = url_match.group(1).replace("-", " ").title()
-
-                text = card.get_text()
+                city_match = re.search(
+                    r" - ([A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖÙÚÛÜ][A-ZÀ-Úa-zà-ú\s-]+?)(?:\s+\d|\s+m²|$)",
+                    text,
+                )
+                if city_match:
+                    city = city_match.group(1).strip().title()
                 pc_match = re.search(r"\b(\d{4})\b", text)
                 if pc_match:
                     postal_code = pc_match.group(1)
