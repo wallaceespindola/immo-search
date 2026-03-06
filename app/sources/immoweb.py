@@ -6,24 +6,27 @@ import logging
 import re
 import time
 
-from app.config import MAX_PRICE, MIN_BEDROOMS, TARGET_POSTAL_CODES
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL, TARGET_POSTAL_CODES
 from app.sources.base import BaseSource
 from app.storage import Listing
 
 logger = logging.getLogger(__name__)
 
-# Postal codes to include in the Immoweb search URL (max ~20 for URL length)
+# Postal codes to include in the Immoweb search URL (max ~25 for URL length)
 _SEARCH_POSTAL_CODES = ",".join(f"BE-{pc}" for pc in TARGET_POSTAL_CODES[:25])
 
-_SEARCH_URL = (
-    "https://www.immoweb.be/en/search/house/for-sale"
-    f"?countries=BE"
-    f"&maxPrice={MAX_PRICE}"
-    f"&minBedroomCount={MIN_BEDROOMS}"
-    f"&hasSwimmingPool=true"
-    f"&postalCodes={_SEARCH_POSTAL_CODES}"
-    f"&orderBy=newest"
-)
+
+def _build_search_url() -> str:
+    """Build the Immoweb search URL respecting optional config values."""
+    base = "https://www.immoweb.be/en/search/house/for-sale?countries=BE"
+    if MAX_PRICE is not None:
+        base += f"&maxPrice={MAX_PRICE}"
+    if MIN_BEDROOMS is not None:
+        base += f"&minBedroomCount={MIN_BEDROOMS}"
+    if REQUIRE_POOL:
+        base += "&hasSwimmingPool=true"
+    base += f"&postalCodes={_SEARCH_POSTAL_CODES}&orderBy=newest"
+    return base
 
 
 class ImmowebSource(BaseSource):
@@ -47,6 +50,7 @@ class ImmowebSource(BaseSource):
 
         listings: list[Listing] = []
         intercepted: list[dict] = []
+        search_url = _build_search_url()
 
         try:
             with sync_playwright() as pw:
@@ -93,7 +97,7 @@ class ImmowebSource(BaseSource):
                 page.on("response", _on_response)
 
                 for page_num in range(1, 4):
-                    page_url = f"{_SEARCH_URL}&page={page_num}"
+                    page_url = f"{search_url}&page={page_num}"
                     logger.debug("[Immoweb] Loading page %d: %s", page_num, page_url)
                     try:
                         page.goto(page_url, wait_until="networkidle", timeout=30_000)
@@ -204,7 +208,9 @@ class ImmowebSource(BaseSource):
                         id_m = re.search(r"/(\d+)/?$", href)
                         native_id = id_m.group(1) if id_m else ""
 
-                    if not self._in_target_area(postal_code, city):
+                    # URL already filters by postal code — only skip if both fields are empty
+                    # and the postal code is clearly outside our target area
+                    if postal_code and not self._in_target_area(postal_code, city):
                         continue
 
                     lid = Listing.make_id(self.name, native_id, href, city, "", price, bedrooms)

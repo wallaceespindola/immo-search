@@ -58,9 +58,9 @@ _EMAIL_BODY_TEMPLATE = """
 <div class="filters">
   <strong>Filtres appliqués :</strong><br>
   • Type : Maison 4 façades (détachée)<br>
-  • Chambres : {min_bedrooms}+<br>
+  • Chambres : {min_bedrooms}<br>
   • Piscine : Requise<br>
-  • Prix maximum : €{max_price:,}<br>
+  • Prix maximum : €{max_price}<br>
   • Zones : {cities}
 </div>
 
@@ -108,27 +108,28 @@ def _render_listing_html(listing: Listing) -> str:
 
 
 def send_notification(listings: list[Listing]) -> bool:
-    """Send email notification for new listings. Returns True on success."""
-    if not listings:
-        logger.info("No new listings to notify.")
-        return False
-
+    """Send email notification for new listings (or daily summary if empty). Returns True on success."""
     if not GMAIL_USER or not GMAIL_APP_PASSWORD or not EMAIL_TO:
         logger.warning("Email credentials not configured — skipping notification.")
         return False
 
     count = len(listings)
     today = date.today().strftime("%d/%m/%Y")
-    subject = f"{count} New {'Property' if count == 1 else 'Properties'} — Brabant Wallon"
 
-    listings_html = "\n".join(_render_listing_html(listing) for listing in listings)
+    if count == 0:
+        subject = f"[immo-search] Daily run — 0 new listings — {today}"
+        listings_html = "<p style='color:#999;font-style:italic;'>Aucune nouvelle propriété trouvée aujourd'hui.</p>"
+    else:
+        subject = f"[immo-search] {count} New {'Property' if count == 1 else 'Properties'} — Brabant Wallon"
+        listings_html = "\n".join(_render_listing_html(listing) for listing in listings)
+
     cities_preview = ", ".join(TARGET_CITIES[:6]) + "..."
 
     body_html = _EMAIL_BODY_TEMPLATE.format(
         count=count,
         today=today,
-        min_bedrooms=MIN_BEDROOMS,
-        max_price=MAX_PRICE,
+        min_bedrooms=f"{MIN_BEDROOMS}+" if MIN_BEDROOMS is not None else "—",
+        max_price=f"{MAX_PRICE:,}" if MAX_PRICE is not None else "—",
         cities=cities_preview,
         listings_html=listings_html,
     )

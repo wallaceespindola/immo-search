@@ -24,8 +24,14 @@ def _make_listing(listing_id: str = "test:1") -> Listing:
     )
 
 
-def test_send_notification_no_listings():
-    result = send_notification([])
+def test_send_notification_no_listings_returns_false_without_credentials():
+    """With empty credentials, even a daily summary (0 listings) returns False."""
+    with (
+        patch("app.mailer.GMAIL_USER", ""),
+        patch("app.mailer.GMAIL_APP_PASSWORD", ""),
+        patch("app.mailer.EMAIL_TO", ""),
+    ):
+        result = send_notification([])
     assert result is False
 
 

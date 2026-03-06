@@ -60,9 +60,9 @@ _HTML_REPORT_TEMPLATE = """<!DOCTYPE html>
 <div class="summary"><strong>{count} propriété(s) trouvée(s)</strong> dans le Brabant Wallon</div>
 <div class="filters">
   <strong>Filtres :</strong> Maison 4 façades &nbsp;|&nbsp;
-  {min_bedrooms}+ chambres &nbsp;|&nbsp;
+  {min_bedrooms} chambres &nbsp;|&nbsp;
   Piscine requise &nbsp;|&nbsp;
-  Prix max €{max_price:,}
+  Prix max €{max_price}
 </div>
 <table>
   <thead>
@@ -122,8 +122,8 @@ def _generate_html_report(listings: list[Listing], report_date: date) -> Path:
     html = _HTML_REPORT_TEMPLATE.format(
         date=report_date.strftime("%d/%m/%Y"),
         count=len(listings),
-        min_bedrooms=MIN_BEDROOMS,
-        max_price=MAX_PRICE,
+        min_bedrooms=MIN_BEDROOMS if MIN_BEDROOMS is not None else "—",
+        max_price=f"{MAX_PRICE:,}" if MAX_PRICE is not None else "—",
         rows=rows,
         datetime_str=datetime.now(UTC).strftime("%d/%m/%Y %H:%M UTC"),
     )
@@ -170,7 +170,9 @@ def run() -> None:
     today = date.today()
     logger.info("=" * 60)
     logger.info("immo-search — run started: %s", today.isoformat())
-    logger.info("Criteria: 4-façades house, %d+ bedrooms, pool, ≤€%d", MIN_BEDROOMS, MAX_PRICE)
+    bedrooms_str = f"{MIN_BEDROOMS}+" if MIN_BEDROOMS is not None else "any"
+    price_str = f"≤€{MAX_PRICE:,}" if MAX_PRICE is not None else "no limit"
+    logger.info("Criteria: 4-façades house, %s bedrooms, pool, %s", bedrooms_str, price_str)
     logger.info("Target area: %s", ", ".join(TARGET_CITIES[:6]) + "...")
     logger.info("=" * 60)
 
@@ -222,7 +224,9 @@ def run() -> None:
         else:
             logger.warning("Email notification failed — listings will be retried next run.")
     else:
-        logger.info("No email sent — nothing new.")
+        # Always send a daily summary so you know the agent ran, even with 0 results
+        send_notification([])
+        logger.info("Daily summary email sent (0 new listings).")
 
     # 6. Summary
     logger.info("-" * 60)

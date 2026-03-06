@@ -19,6 +19,7 @@ from app.config import (
     REQUEST_DELAY_MIN,
     REQUEST_TIMEOUT,
     REQUIRE_PARKING,
+    REQUIRE_POOL,
     TARGET_POSTAL_CODES,
 )
 from app.storage import Listing
@@ -75,6 +76,9 @@ class BaseSource(ABC):
         """Perform a GET request with error handling and rate limiting."""
         self._rate_limit()
         try:
+            # Strip None values from params so they are not sent as "None" strings
+            if params:
+                params = {k: v for k, v in params.items() if v is not None}
             h = {**DEFAULT_HEADERS, **(headers or {})}
             resp = self._session.get(url, params=params, headers=h, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
@@ -95,9 +99,11 @@ class BaseSource(ABC):
 
     def _is_valid(self, listing: Listing) -> bool:
         """Validate listing against core criteria."""
-        if listing.price > MAX_PRICE:
+        if MAX_PRICE is not None and listing.price > MAX_PRICE:
             return False
-        if listing.bedrooms < MIN_BEDROOMS:
+        if MIN_BEDROOMS is not None and listing.bedrooms < MIN_BEDROOMS:
+            return False
+        if REQUIRE_POOL and not listing.has_pool:
             return False
         if REQUIRE_PARKING and not listing.has_parking:
             return False
