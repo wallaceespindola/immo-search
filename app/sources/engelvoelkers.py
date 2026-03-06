@@ -46,8 +46,7 @@ class EngelVolkersSource(BaseSource):
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
         cards = soup.select(
-            "article.ev-property-card, div.property-card, li.property-item, "
-            "div[data-property-id], article.listing"
+            "article.ev-property-card, div.property-card, li.property-item, " "div[data-property-id], article.listing"
         )
 
         for card in cards:

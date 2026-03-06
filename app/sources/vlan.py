@@ -45,9 +45,7 @@ class VlanSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.ad-item, article.classified, li.listing, div.result-item"
-        )
+        cards = soup.select("div.ad-item, article.classified, li.listing, div.result-item")
 
         for card in cards:
             try:

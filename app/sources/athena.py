@@ -46,9 +46,7 @@ class AthenaSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.bien, li.listing-item, div.property"
-        )
+        cards = soup.select("div.property-card, article.bien, li.listing-item, div.property")
 
         for card in cards:
             try:

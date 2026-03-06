@@ -50,9 +50,7 @@ class ImmoNeufSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.project-card, li.listing, div.result-item"
-        )
+        cards = soup.select("div.property-card, article.project-card, li.listing, div.result-item")
 
         for card in cards:
             try:

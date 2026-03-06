@@ -139,25 +139,39 @@ def _generate_csv_report(listings: list[Listing], report_date: date) -> Path:
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["id", "title", "price", "city", "address", "bedrooms",
-                        "area", "has_pool", "has_parking", "source", "url", "collected_at"],
+            fieldnames=[
+                "id",
+                "title",
+                "price",
+                "city",
+                "address",
+                "bedrooms",
+                "area",
+                "has_pool",
+                "has_parking",
+                "source",
+                "url",
+                "collected_at",
+            ],
         )
         writer.writeheader()
         for item in listings:
-            writer.writerow({
-                "id": item.id,
-                "title": item.title,
-                "price": item.price,
-                "city": item.city,
-                "address": item.address,
-                "bedrooms": item.bedrooms,
-                "area": item.area or "",
-                "has_pool": "yes" if item.has_pool else "no",
-                "has_parking": "yes" if item.has_parking else "no",
-                "source": item.source,
-                "url": item.url,
-                "collected_at": item.collected_at,
-            })
+            writer.writerow(
+                {
+                    "id": item.id,
+                    "title": item.title,
+                    "price": item.price,
+                    "city": item.city,
+                    "address": item.address,
+                    "bedrooms": item.bedrooms,
+                    "area": item.area or "",
+                    "has_pool": "yes" if item.has_pool else "no",
+                    "has_parking": "yes" if item.has_parking else "no",
+                    "source": item.source,
+                    "url": item.url,
+                    "collected_at": item.collected_at,
+                }
+            )
     logger.info("CSV report written: %s", path)
     return path
 
@@ -165,6 +179,7 @@ def _generate_csv_report(listings: list[Listing], report_date: date) -> Path:
 # ---------------------------------------------------------------------------
 # Main orchestration
 # ---------------------------------------------------------------------------
+
 
 def run() -> None:
     today = date.today()

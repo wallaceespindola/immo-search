@@ -113,11 +113,7 @@ class NotarisSource(BaseSource):
             area = float(area_raw) if area_raw else None
 
             text = f"{title} {item.get('description', '')}".lower()
-            has_pool = (
-                bool(item.get("hasPool") or item.get("swimmingPool"))
-                or "piscine" in text
-                or "zwembad" in text
-            )
+            has_pool = bool(item.get("hasPool") or item.get("swimmingPool")) or "piscine" in text or "zwembad" in text
             has_parking = bool(item.get("hasGarage") or item.get("parking")) or self._detect_parking(text)
 
             url = item.get("url", item.get("link", ""))
@@ -151,9 +147,7 @@ class NotarisSource(BaseSource):
     def _parse_html_results(self, soup) -> list[Listing]:
         """Parse HTML search results from notaris.be."""
         listings = []
-        cards = soup.select(
-            "div.property-card, article.property, li.property-item, div.bien-item"
-        )
+        cards = soup.select("div.property-card, article.property, li.property-item, div.bien-item")
 
         for card in cards:
             try:

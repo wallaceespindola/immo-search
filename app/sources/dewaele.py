@@ -46,9 +46,7 @@ class DewaeleSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.property, li.result, div.listing-card"
-        )
+        cards = soup.select("div.property-card, article.property, li.result, div.listing-card")
 
         for card in cards:
             try:

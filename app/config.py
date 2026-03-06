@@ -17,6 +17,7 @@ STATE_DB = BASE_DIR / "state.sqlite"
 
 # === Helpers ===
 
+
 def _csv(key: str, default: str = "") -> list[str]:
     """Parse comma-separated env var. Returns [] if key is missing or empty."""
     raw = os.getenv(key, default)
@@ -44,10 +45,10 @@ EMAIL_TO: str = os.getenv("EMAIL_TO", "")
 
 # === Search criteria ===
 # Removing or emptying any of these in .env disables that filter entirely.
-MAX_PRICE: int | None = _opt_int("MAX_PRICE")          # None = no price limit
-MIN_BEDROOMS: int | None = _opt_int("MIN_BEDROOMS")    # None = any bedroom count
-REQUIRE_POOL: bool = _opt_bool("REQUIRE_POOL")          # empty/missing = pool not required
-REQUIRE_PARKING: bool = _opt_bool("REQUIRE_PARKING")    # empty/missing = parking not required
+MAX_PRICE: int | None = _opt_int("MAX_PRICE")  # None = no price limit
+MIN_BEDROOMS: int | None = _opt_int("MIN_BEDROOMS")  # None = any bedroom count
+REQUIRE_POOL: bool = _opt_bool("REQUIRE_POOL")  # empty/missing = pool not required
+REQUIRE_PARKING: bool = _opt_bool("REQUIRE_PARKING")  # empty/missing = parking not required
 
 # PEB / EPC energy ratings filter (A=excellent, B=good, C=poor, D=bad)
 # Comma-separated list. Empty/missing = no EPC filter applied.
@@ -98,8 +99,7 @@ _PC_NAMUR_DEFAULT = (
     "5310,5330,5340,5350,5360,5370,5380"
 )
 _PC_VBR_DEFAULT = (
-    "3001,3010,3018,3050,3053,3054,3060,3061,3070,3080,3090,"
-    "1560,1600,1620,1630,1640,1650,1654,1670,1500,1501,1502"
+    "3001,3010,3018,3050,3053,3054,3060,3061,3070,3080,3090," "1560,1600,1620,1630,1640,1650,1654,1670,1500,1501,1502"
 )
 
 TARGET_POSTAL_CODES_BW: list[str] = _csv("POSTAL_CODES_BW", _PC_BW_DEFAULT)
@@ -115,24 +115,17 @@ _INCLUDE_FR_DEFAULT = (
     "maison isolée,maison isolee,propriété,propriete,"
     "villa indépendante,villa independante,4 façades,4 facades"
 )
-_INCLUDE_NL_DEFAULT = (
-    "open bebouwing,vrijstaande woning,alleenstaande woning,villa,open huis,4 gevels"
-)
-_INCLUDE_EN_DEFAULT = (
-    "detached house,detached villa,villa,4 facades,4-facade,single-family home,standalone house"
-)
+_INCLUDE_NL_DEFAULT = "open bebouwing,vrijstaande woning,alleenstaande woning,villa,open huis,4 gevels"
+_INCLUDE_EN_DEFAULT = "detached house,detached villa,villa,4 facades,4-facade,single-family home,standalone house"
 _EXCLUDE_FR_DEFAULT = (
     "appartement,studio,duplex,triplex,penthouse,rez-de-chaussée,rez-de-chaussee,"
     "immeuble à appartements,immeuble a appartements,maison mitoyenne,"
     "2 façades,2 facades,3 façades,3 facades,maison de rangée,maison de rangee"
 )
 _EXCLUDE_NL_DEFAULT = (
-    "appartement,studio,duplex,penthouse,rijwoning,"
-    "gesloten bebouwing,halfopen bebouwing,2 gevels,3 gevels"
+    "appartement,studio,duplex,penthouse,rijwoning," "gesloten bebouwing,halfopen bebouwing,2 gevels,3 gevels"
 )
-_EXCLUDE_EN_DEFAULT = (
-    "apartment,studio,duplex,penthouse,townhouse,terraced house,semi-detached,semi detached"
-)
+_EXCLUDE_EN_DEFAULT = "apartment,studio,duplex,penthouse,townhouse,terraced house,semi-detached,semi detached"
 _POOL_FR_DEFAULT = "piscine,piscine extérieure,piscine chauffée,piscine privée,avec piscine"
 _POOL_NL_DEFAULT = "zwembad,verwarmd zwembad,privé zwembad,met zwembad"
 _POOL_EN_DEFAULT = "swimming pool,private pool,heated pool,outdoor pool,pool"

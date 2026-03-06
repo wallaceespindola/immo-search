@@ -50,9 +50,7 @@ class LatourEtPetitSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-item, article.bien, li.listing-item, div.card-property"
-        )
+        cards = soup.select("div.property-item, article.bien, li.listing-item, div.card-property")
 
         for card in cards:
             try:

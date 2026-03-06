@@ -47,9 +47,7 @@ class ERASource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.property-item, div.listing-item, li.result-item"
-        )
+        cards = soup.select("div.property-card, article.property-item, div.listing-item, li.result-item")
 
         for card in cards:
             try:

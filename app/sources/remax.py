@@ -46,9 +46,7 @@ class RemaxSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.listing-card, div.result-item, li.property-item"
-        )
+        cards = soup.select("div.property-card, article.listing-card, div.result-item, li.property-item")
 
         for card in cards:
             try:
@@ -63,9 +61,7 @@ class RemaxSource(BaseSource):
                 price_el = card.select_one("[class*='price'], [class*='prix']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one(
-                    "[class*='city'], [class*='location'], [class*='locality']"
-                )
+                city_el = card.select_one("[class*='city'], [class*='location'], [class*='locality']")
                 city = city_el.get_text(strip=True) if city_el else ""
 
                 text = card.get_text()

@@ -7,8 +7,11 @@ from app.storage import Listing
 
 
 def _make_mock_listing(
-    source: str = "Test", price: int = 450_000, bedrooms: int = 4,
-    has_pool: bool = True, has_parking: bool = True,
+    source: str = "Test",
+    price: int = 450_000,
+    bedrooms: int = 4,
+    has_pool: bool = True,
+    has_parking: bool = True,
 ) -> Listing:
     return Listing(
         id=f"{source}:1",
@@ -28,6 +31,7 @@ def _make_mock_listing(
 
 class ConcreteSource(BaseSource):
     """Concrete implementation of BaseSource for testing."""
+
     name = "TestSource"
     tier = 1
 
@@ -94,8 +98,8 @@ def test_base_source_fetch_listings_handles_exception():
 
 def test_in_target_area_by_postal_code():
     source = ConcreteSource()
-    assert source._in_target_area("1300", None) is True   # Wavre
-    assert source._in_target_area("1410", None) is True   # Waterloo
+    assert source._in_target_area("1300", None) is True  # Wavre
+    assert source._in_target_area("1410", None) is True  # Waterloo
     assert source._in_target_area("1000", None) is False  # Brussels
 
 

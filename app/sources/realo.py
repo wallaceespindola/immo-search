@@ -84,20 +84,22 @@ class RealoSource(BaseSource):
                     native_id = m.group(1) if m else ""
 
                 listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)
-                listings.append(Listing(
-                    id=listing_id,
-                    title=title,
-                    price=price,
-                    city=city,
-                    address="",
-                    bedrooms=bedrooms,
-                    area=area,
-                    has_pool=has_pool,
-                    has_parking=has_parking,
-                    source=self.name,
-                    url=url,
-                    collected_at=self._now_iso(),
-                ))
+                listings.append(
+                    Listing(
+                        id=listing_id,
+                        title=title,
+                        price=price,
+                        city=city,
+                        address="",
+                        bedrooms=bedrooms,
+                        area=area,
+                        has_pool=has_pool,
+                        has_parking=has_parking,
+                        source=self.name,
+                        url=url,
+                        collected_at=self._now_iso(),
+                    )
+                )
             except Exception as exc:
                 logger.debug("[%s] Parse error: %s", self.name, exc)
 

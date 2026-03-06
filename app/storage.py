@@ -32,8 +32,14 @@ class Listing:
 
     @classmethod
     def make_id(  # noqa: PLR0913
-        cls, source: str, native_id: str | None, url: str | None,
-        city: str, address: str, price: int, bedrooms: int,
+        cls,
+        source: str,
+        native_id: str | None,
+        url: str | None,
+        city: str,
+        address: str,
+        price: int,
+        bedrooms: int,
     ) -> str:
         """Generate a deterministic ID using deduplication priority rules."""
         if native_id:
@@ -118,9 +124,7 @@ def save_listing(listing: Listing) -> bool:
 def get_unnotified() -> list[Listing]:
     """Return listings that have not yet been emailed."""
     with _get_conn() as conn:
-        rows = conn.execute(
-            "SELECT * FROM listings WHERE notified = 0 ORDER BY collected_at DESC"
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM listings WHERE notified = 0 ORDER BY collected_at DESC").fetchall()
     return [_row_to_listing(r) for r in rows]
 
 

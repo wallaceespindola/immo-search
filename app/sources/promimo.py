@@ -40,8 +40,7 @@ class PromimoSource(BaseSource):
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
         cards = soup.select(
-            "div.property-card, article.bien, li.listing-item, div.property, "
-            "div.card, article, li.property"
+            "div.property-card, article.bien, li.listing-item, div.property, " "div.card, article, li.property"
         )
 
         for card in cards:

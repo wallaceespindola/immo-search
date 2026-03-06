@@ -51,7 +51,9 @@ class BaseSource(ABC):
                 sample_cities = list({item.city for item in listings[:5]})
                 logger.debug(
                     "[%s] Filtered out all %d listings. Sample cities: %s",
-                    self.name, len(listings), sample_cities,
+                    self.name,
+                    len(listings),
+                    sample_cities,
                 )
             logger.info("[%s] Found %d matching listings (from %d raw)", self.name, len(valid), len(listings))
             return valid
@@ -121,6 +123,7 @@ class BaseSource(ABC):
             return True
         if city:
             from app.config import TARGET_CITIES
+
             city_lower = city.lower()
             return any(tc.lower() in city_lower or city_lower in tc.lower() for tc in TARGET_CITIES)
         return False
@@ -133,6 +136,7 @@ class BaseSource(ABC):
     def _clean_price(self, raw: str) -> int:
         """Parse price string to integer EUR."""
         import re
+
         digits = re.sub(r"[^\d]", "", raw)
         return int(digits) if digits else 0
 
@@ -141,5 +145,6 @@ class BaseSource(ABC):
         if not raw:
             return 0
         import re
+
         digits = re.sub(r"[^\d]", "", raw)
         return int(digits) if digits else 0

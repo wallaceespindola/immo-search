@@ -44,9 +44,7 @@ class HomeAvenueSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-item, article.listing, li.result, div.ad-item"
-        )
+        cards = soup.select("div.property-item, article.listing, li.result, div.ad-item")
 
         for card in cards:
             try:
@@ -61,9 +59,7 @@ class HomeAvenueSource(BaseSource):
                 price_el = card.select_one("[class*='price'], [class*='prix']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one(
-                    "[class*='city'], [class*='location'], [class*='commune']"
-                )
+                city_el = card.select_one("[class*='city'], [class*='location'], [class*='commune']")
                 city = city_el.get_text(strip=True) if city_el else ""
 
                 text = card.get_text()

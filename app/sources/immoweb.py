@@ -75,6 +75,7 @@ class ImmowebSource(BaseSource):
                 # Apply stealth patches to hide automation indicators
                 try:
                     from playwright_stealth import Stealth
+
                     Stealth().apply_stealth_sync(page)
                     logger.debug("[Immoweb] Stealth mode applied")
                 except Exception as e:
@@ -214,20 +215,22 @@ class ImmowebSource(BaseSource):
                         continue
 
                     lid = Listing.make_id(self.name, native_id, href, city, "", price, bedrooms)
-                    listings.append(Listing(
-                        id=lid,
-                        title=title,
-                        price=price,
-                        city=city,
-                        address="",
-                        bedrooms=bedrooms,
-                        area=area,
-                        has_pool=has_pool,
-                        has_parking=has_parking,
-                        source=self.name,
-                        url=href,
-                        collected_at=self._now_iso(),
-                    ))
+                    listings.append(
+                        Listing(
+                            id=lid,
+                            title=title,
+                            price=price,
+                            city=city,
+                            address="",
+                            bedrooms=bedrooms,
+                            area=area,
+                            has_pool=has_pool,
+                            has_parking=has_parking,
+                            source=self.name,
+                            url=href,
+                            collected_at=self._now_iso(),
+                        )
+                    )
                 except Exception as exc:
                     logger.debug("[Immoweb] DOM card parse error: %s", exc)
 

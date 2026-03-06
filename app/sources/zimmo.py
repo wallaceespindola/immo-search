@@ -20,13 +20,15 @@ class ZimmoSource(BaseSource):
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
         params = {
-            "search": json.dumps({
-                "type": {"or": ["HOUSE"]},
-                "price": {"max": MAX_PRICE},
-                "bedrooms": {"min": MIN_BEDROOMS},
-                "features": {"has_swimming_pool": True},
-                "status": {"or": ["NORMAL", "ON_FUNDA"]},
-            }),
+            "search": json.dumps(
+                {
+                    "type": {"or": ["HOUSE"]},
+                    "price": {"max": MAX_PRICE},
+                    "bedrooms": {"min": MIN_BEDROOMS},
+                    "features": {"has_swimming_pool": True},
+                    "status": {"or": ["NORMAL", "ON_FUNDA"]},
+                }
+            ),
             "sort": "date_desc",
             "page": 1,
         }
@@ -69,6 +71,7 @@ class ZimmoSource(BaseSource):
                 bedrooms = self._clean_int(bed_el.get_text(strip=True) if bed_el else "0")
                 if bedrooms == 0:
                     import re
+
                     bed_match = re.search(r"(\d+)\s*(?:chambres?|slaapkamers?|ch\.)", card.get_text(), re.I)
                     bedrooms = int(bed_match.group(1)) if bed_match else 0
 
@@ -79,6 +82,7 @@ class ZimmoSource(BaseSource):
                 native_id = ""
                 if url:
                     import re
+
                     m = re.search(r"/(\d+)/?$", url)
                     native_id = m.group(1) if m else ""
 
@@ -86,20 +90,22 @@ class ZimmoSource(BaseSource):
                     continue
 
                 listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)
-                listings.append(Listing(
-                    id=listing_id,
-                    title=title,
-                    price=price,
-                    city=city,
-                    address="",
-                    bedrooms=bedrooms,
-                    area=None,
-                    has_pool=has_pool,
-                    has_parking=has_parking,
-                    source=self.name,
-                    url=url,
-                    collected_at=self._now_iso(),
-                ))
+                listings.append(
+                    Listing(
+                        id=listing_id,
+                        title=title,
+                        price=price,
+                        city=city,
+                        address="",
+                        bedrooms=bedrooms,
+                        area=None,
+                        has_pool=has_pool,
+                        has_parking=has_parking,
+                        source=self.name,
+                        url=url,
+                        collected_at=self._now_iso(),
+                    )
+                )
             except Exception as exc:
                 logger.debug("[%s] Parse error: %s", self.name, exc)
 

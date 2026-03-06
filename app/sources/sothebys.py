@@ -47,9 +47,7 @@ class SothebysSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.listing, li.property-item, div.result-card"
-        )
+        cards = soup.select("div.property-card, article.listing, li.property-item, div.result-card")
 
         for card in cards:
             try:
@@ -64,9 +62,7 @@ class SothebysSource(BaseSource):
                 price_el = card.select_one("[class*='price'], [class*='prix']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one(
-                    "[class*='city'], [class*='location'], [class*='locality']"
-                )
+                city_el = card.select_one("[class*='city'], [class*='location'], [class*='locality']")
                 city = city_el.get_text(strip=True) if city_el else ""
 
                 text = card.get_text()
@@ -77,9 +73,7 @@ class SothebysSource(BaseSource):
                 area = float(area_match.group(1)) if area_match else None
 
                 text_lower = text.lower()
-                has_pool = (
-                    "piscine" in text_lower or "zwembad" in text_lower or "pool" in text_lower
-                )
+                has_pool = "piscine" in text_lower or "zwembad" in text_lower or "pool" in text_lower
                 has_parking = self._detect_parking(text)
 
                 if not self._in_target_area(None, city):

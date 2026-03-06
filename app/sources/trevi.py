@@ -46,9 +46,7 @@ class TreviSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select(
-            "div.property-card, article.bien-item, li.listing-result, div.result-property"
-        )
+        cards = soup.select("div.property-card, article.bien-item, li.listing-result, div.result-property")
 
         for card in cards:
             try:
