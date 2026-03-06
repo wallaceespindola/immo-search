@@ -1,21 +1,37 @@
 """Unit tests for app/config.py."""
 
+import importlib
+import os
+import sys
+from unittest.mock import patch
+
 from app.config import (
     ALL_EXCLUSION_KEYWORDS,
     ALL_POOL_KEYWORDS,
-    MAX_PRICE,
-    MIN_BEDROOMS,
     TARGET_CITIES,
     TARGET_POSTAL_CODES,
 )
 
 
-def test_max_price():
-    assert MAX_PRICE == 600_000
+def test_max_price_parses_integer():
+    """MAX_PRICE is parsed as int when set, or None when absent."""
+    with patch.dict(os.environ, {"MAX_PRICE": "600000"}):
+        # Re-import to get fresh parse
+        import app.config as cfg
+
+        importlib.reload(cfg)
+        assert cfg.MAX_PRICE == 600_000
+    importlib.reload(cfg)  # restore to original state
 
 
-def test_min_bedrooms():
-    assert MIN_BEDROOMS == 4
+def test_min_bedrooms_parses_integer():
+    """MIN_BEDROOMS is parsed as int when set, or None when absent."""
+    with patch.dict(os.environ, {"MIN_BEDROOMS": "4"}):
+        import app.config as cfg
+
+        importlib.reload(cfg)
+        assert cfg.MIN_BEDROOMS == 4
+    importlib.reload(cfg)  # restore to original state
 
 
 def test_target_cities_not_empty():

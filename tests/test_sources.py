@@ -42,13 +42,15 @@ class ConcreteSource(BaseSource):
 def test_base_source_validation_price_too_high():
     source = ConcreteSource()
     listing = _make_mock_listing(price=700_000)
-    assert source._is_valid(listing) is False
+    with patch("app.sources.base.MAX_PRICE", 600_000):
+        assert source._is_valid(listing) is False
 
 
 def test_base_source_validation_too_few_bedrooms():
     source = ConcreteSource()
     listing = _make_mock_listing(bedrooms=2)
-    assert source._is_valid(listing) is False
+    with patch("app.sources.base.MIN_BEDROOMS", 4):
+        assert source._is_valid(listing) is False
 
 
 def test_base_source_validation_exclusion_keyword():
