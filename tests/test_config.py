@@ -2,7 +2,6 @@
 
 import importlib
 import os
-import sys
 from unittest.mock import patch
 
 from app.config import (
