@@ -57,6 +57,13 @@ class PPRSource(BaseSource):
 
     def _parse_item(self, item: dict) -> Listing | None:
         try:
+            # Goal=0 = for sale, Goal=1 = for rent — skip rentals
+            if item.get("Goal", 0) != 0:
+                return None
+            # Only detached houses — skip studios, land, investment properties
+            if item.get("WebIDName", "") != "Villa/Woning/Hoeve":
+                return None
+
             native_id = str(item.get("ID", ""))
             city = item.get("City", "").strip().title()
             postal_code = str(item.get("Zip", "") or "")

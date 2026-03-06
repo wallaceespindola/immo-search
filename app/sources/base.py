@@ -15,6 +15,7 @@ from app.config import (
     DEFAULT_HEADERS,
     MAX_PRICE,
     MIN_BEDROOMS,
+    MIN_PRICE,
     REQUEST_DELAY_MAX,
     REQUEST_DELAY_MIN,
     REQUEST_TIMEOUT,
@@ -118,6 +119,10 @@ class BaseSource(ABC):
         expose pool info in listing cards are passed through so the user can
         follow the link and check manually.
         """
+        if listing.price == 0:
+            return False  # price=0 means "OPTION", "Prix sur demande", or parse error
+        if MIN_PRICE is not None and listing.price < MIN_PRICE:
+            return False
         if MAX_PRICE is not None and listing.price > MAX_PRICE:
             return False
         # bedrooms=0 means "unknown" (card didn't show count) — pass through

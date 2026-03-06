@@ -57,24 +57,32 @@ class ImmovlanSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select("div.property-card, article.result, li[data-id]")
+        # Articles have class "list-view-item" and "card"
+        cards = soup.select("article.list-view-item, article.card")
 
         for card in cards:
             try:
-                native_id = card.get("data-id", "")
-                link_el = card.select_one("a[href]")
+                link_el = card.select_one("a[href*='/detail/']") or card.select_one("a[href]")
                 url = link_el["href"] if link_el else ""
                 if url and not url.startswith("http"):
                     url = f"https://immovlan.be{url}"
 
-                title_el = card.select_one("h2, h3, .title")
+                # Extract native ID and postal+city from URL: /detail/maison/a-vendre/1300/wavre/vwd12345
+                native_id = ""
+                postal_code = ""
+                city = ""
+                if url:
+                    m = re.search(r"/detail/[^/]+/[^/]+/(\d{4})/([^/]+)/([^/?]+)", url)
+                    if m:
+                        postal_code = m.group(1)
+                        city = m.group(2).replace("-", " ").title()
+                        native_id = m.group(3)
+
+                title_el = card.select_one("h2, h3, .card-title")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
 
-                price_el = card.select_one("[class*='price']")
+                price_el = card.select_one(".list-item-price, [class*='price']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
-
-                city_el = card.select_one("[class*='city'], [class*='location'], [class*='locality']")
-                city = city_el.get_text(strip=True) if city_el else ""
 
                 text = card.get_text()
                 bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?)", text, re.I)
@@ -87,7 +95,7 @@ class ImmovlanSource(BaseSource):
                 has_pool = "piscine" in text_lower or "zwembad" in text_lower
                 has_parking = self._detect_parking(text)
 
-                if not self._in_target_area(None, city):
+                if not self._in_target_area(postal_code, city):
                     continue
 
                 listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)

@@ -42,14 +42,28 @@ class ConcreteSource(BaseSource):
 def test_base_source_validation_price_too_high():
     source = ConcreteSource()
     listing = _make_mock_listing(price=700_000)
-    with patch("app.sources.base.MAX_PRICE", 600_000):
+    with patch("app.sources.base.MAX_PRICE", 600_000), patch("app.sources.base.MIN_PRICE", None):
+        assert source._is_valid(listing) is False
+
+
+def test_base_source_validation_price_zero():
+    source = ConcreteSource()
+    listing = _make_mock_listing(price=0)
+    with patch("app.sources.base.MAX_PRICE", None), patch("app.sources.base.MIN_PRICE", None):
+        assert source._is_valid(listing) is False
+
+
+def test_base_source_validation_price_too_low():
+    source = ConcreteSource()
+    listing = _make_mock_listing(price=50_000)
+    with patch("app.sources.base.MAX_PRICE", None), patch("app.sources.base.MIN_PRICE", 100_000):
         assert source._is_valid(listing) is False
 
 
 def test_base_source_validation_too_few_bedrooms():
     source = ConcreteSource()
     listing = _make_mock_listing(bedrooms=2)
-    with patch("app.sources.base.MIN_BEDROOMS", 4):
+    with patch("app.sources.base.MIN_BEDROOMS", 4), patch("app.sources.base.MIN_PRICE", None):
         assert source._is_valid(listing) is False
 
 

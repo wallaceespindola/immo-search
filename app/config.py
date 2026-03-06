@@ -46,6 +46,7 @@ EMAIL_TO: str = os.getenv("EMAIL_TO", "")
 # === Search criteria ===
 # Removing or emptying any of these in .env disables that filter entirely.
 MAX_PRICE: int | None = _opt_int("MAX_PRICE")  # None = no price limit
+MIN_PRICE: int | None = _opt_int("MIN_PRICE")  # None = no minimum; set e.g. 100000
 MIN_BEDROOMS: int | None = _opt_int("MIN_BEDROOMS")  # None = any bedroom count
 REQUIRE_POOL: bool = _opt_bool("REQUIRE_POOL")  # empty/missing = pool not required
 REQUIRE_PARKING: bool = _opt_bool("REQUIRE_PARKING")  # empty/missing = parking not required
