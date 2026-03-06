@@ -59,9 +59,9 @@ EPC_RATINGS: list[str] = _csv("EPC_RATINGS", _EPC_DEFAULT)
 IMMO_SITES_ACTIVE: list[str] = _csv(
     "IMMO_SITES_ACTIVE",
     "Immoweb,Zimmo,Immovlan,Immoscoop,Logic-Immo,Biddit,"
-    "ERA,REMAX,Dewaele,LatourPetit,Notaris,Trevi,Promimo,CapSud,"
+    "ERA,REMAX,Dewaele,LatourPetit,Notaris,Trevi,Promimo,CapSud,PPR,ImmoBW,Avenir,Altis,"
     "Realo,Trovit,eRowz,Century21,Sothebys,HomeAvenue,Vlan,Athena,ImmoNeuf,"
-    "EngelVolkers,ImmoVillages",
+    "EngelVolkers,ImmoVillages,LesViviers",
 )
 
 # === Target cities ===

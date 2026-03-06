@@ -1,5 +1,7 @@
-# Real estate source adapters — 25 Belgian sites across 3 tiers
+# Real estate source adapters — 29 Belgian sites across 3 tiers
+from app.sources.altis import AltisSource
 from app.sources.athena import AthenaSource
+from app.sources.avenir import AvenirSource
 from app.sources.base import BaseSource
 from app.sources.biddit import BidditSource
 from app.sources.capsud import CapSudSource
@@ -9,14 +11,17 @@ from app.sources.engelvoelkers import EngelVolkersSource
 from app.sources.era import ERASource
 from app.sources.erowz import ErowzSource
 from app.sources.homeavenue import HomeAvenueSource
+from app.sources.immobw import ImmoBWSource
 from app.sources.immoneuf import ImmoNeufSource
 from app.sources.immoscoop import ImmoScoopSource
 from app.sources.immovillages import ImmoVillagesSource
 from app.sources.immovlan import ImmovlanSource
 from app.sources.immoweb import ImmowebSource
 from app.sources.latouretpetit import LatourEtPetitSource
+from app.sources.lesviviers import LesViviersSource
 from app.sources.logicimmo import LogicImmoSource
 from app.sources.notaris import NotarisSource
+from app.sources.ppr import PPRSource
 from app.sources.promimo import PromimoSource
 from app.sources.realo import RealoSource
 from app.sources.remax import RemaxSource
@@ -43,6 +48,10 @@ ALL_SOURCES: list[type[BaseSource]] = [
     TreviSource,
     PromimoSource,
     CapSudSource,
+    PPRSource,
+    ImmoBWSource,
+    AvenirSource,
+    AltisSource,
     # Tier 3 — Aggregators, luxury, classifieds
     RealoSource,
     TrovitSource,
@@ -55,6 +64,7 @@ ALL_SOURCES: list[type[BaseSource]] = [
     ImmoNeufSource,
     EngelVolkersSource,
     ImmoVillagesSource,
+    LesViviersSource,
 ]
 
 __all__ = [
@@ -74,6 +84,10 @@ __all__ = [
     "TreviSource",
     "PromimoSource",
     "CapSudSource",
+    "PPRSource",
+    "ImmoBWSource",
+    "AvenirSource",
+    "AltisSource",
     "RealoSource",
     "TrovitSource",
     "ErowzSource",
@@ -85,4 +99,5 @@ __all__ = [
     "ImmoNeufSource",
     "EngelVolkersSource",
     "ImmoVillagesSource",
+    "LesViviersSource",
 ]
