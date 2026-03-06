@@ -3,11 +3,13 @@
 import logging
 import re
 
-from app.config import MAX_PRICE, MIN_BEDROOMS
+from app.config import EPC_RATINGS, MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL, TARGET_POSTAL_CODES
 from app.sources.base import BaseSource
 from app.storage import Listing
 
 logger = logging.getLogger(__name__)
+
+_POSTAL_CODES_STR = ",".join(TARGET_POSTAL_CODES[:30])
 
 
 class ImmovlanSource(BaseSource):
@@ -16,20 +18,27 @@ class ImmovlanSource(BaseSource):
     name = "Immovlan"
     tier = 1
 
-    _SEARCH_URL = "https://immo.vlan.be/fr/search"
+    _SEARCH_URL = "https://immovlan.be/fr/immobilier"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
-        params = {
-            "transactiontype": "for-sale",
-            "propertytype": "house",
+        tags = "hasgarage"
+        if REQUIRE_POOL:
+            tags = "hasswimmingpool,hasgarage"
+
+        params: dict = {
+            "transactiontypes": "a-vendre,en-vente-publique",
+            "propertytypes": "maison,garage",
+            "propertysubtypes": "maison,villa,bungalow,chalet,fermette,maison-de-maitre,chateau",
+            "provinces": "brabant-flamand,brabant-wallon,namur",
+            "tags": tags,
             "maxprice": MAX_PRICE,
-            "minrooms": MIN_BEDROOMS,
-            "amenities": "swimming-pool",
-            "postalcodes": ",".join(["1300", "1310", "1330", "1340", "1348", "1380", "1410", "1420", "1400", "1470"]),
+            "minbedrooms": MIN_BEDROOMS,
             "orderby": "date_desc",
         }
+        if EPC_RATINGS:
+            params["epcratings"] = ",".join(EPC_RATINGS)
 
         for page in range(1, 4):
             params["page"] = page
@@ -55,7 +64,7 @@ class ImmovlanSource(BaseSource):
                 link_el = card.select_one("a[href]")
                 url = link_el["href"] if link_el else ""
                 if url and not url.startswith("http"):
-                    url = f"https://immo.vlan.be{url}"
+                    url = f"https://immovlan.be{url}"
 
                 title_el = card.select_one("h2, h3, .title")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"

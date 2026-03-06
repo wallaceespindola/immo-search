@@ -15,10 +15,24 @@ LOGS_DIR = BASE_DIR / "logs"
 STATE_DB = BASE_DIR / "state.sqlite"
 
 
-# === Helper: parse comma-separated env var ===
+# === Helpers ===
+
 def _csv(key: str, default: str = "") -> list[str]:
+    """Parse comma-separated env var. Returns [] if key is missing or empty."""
     raw = os.getenv(key, default)
     return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _opt_int(key: str) -> int | None:
+    """Parse optional int env var. Returns None if key is missing or empty (= no limit)."""
+    raw = os.getenv(key, "").strip()
+    return int(raw) if raw else None
+
+
+def _opt_bool(key: str, default: bool = False) -> bool:
+    """Parse optional bool env var. Returns default if key is missing or empty (= disabled)."""
+    raw = os.getenv(key, "").strip()
+    return raw.lower() == "true" if raw else default
 
 
 # === Email configuration ===
@@ -29,16 +43,24 @@ GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", "")
 EMAIL_TO: str = os.getenv("EMAIL_TO", "")
 
 # === Search criteria ===
-MAX_PRICE: int = int(os.getenv("MAX_PRICE", "600000"))
-MIN_BEDROOMS: int = int(os.getenv("MIN_BEDROOMS", "4"))
-REQUIRE_POOL: bool = os.getenv("REQUIRE_POOL", "true").lower() == "true"
+# Removing or emptying any of these in .env disables that filter entirely.
+MAX_PRICE: int | None = _opt_int("MAX_PRICE")          # None = no price limit
+MIN_BEDROOMS: int | None = _opt_int("MIN_BEDROOMS")    # None = any bedroom count
+REQUIRE_POOL: bool = _opt_bool("REQUIRE_POOL")          # empty/missing = pool not required
+REQUIRE_PARKING: bool = _opt_bool("REQUIRE_PARKING")    # empty/missing = parking not required
+
+# PEB / EPC energy ratings filter (A=excellent, B=good, C=poor, D=bad)
+# Comma-separated list. Empty/missing = no EPC filter applied.
+_EPC_DEFAULT = "excellent,good,poor,bad"  # A, B, C, D
+EPC_RATINGS: list[str] = _csv("EPC_RATINGS", _EPC_DEFAULT)
 
 # === Active sites ===
 IMMO_SITES_ACTIVE: list[str] = _csv(
     "IMMO_SITES_ACTIVE",
     "Immoweb,Zimmo,Immovlan,Immoscoop,Logic-Immo,Biddit,"
-    "ERA,REMAX,Dewaele,LatourPetit,Notaris,Trevi,"
-    "Realo,Trovit,eRowz,Century21,Sothebys,HomeAvenue,Vlan,Athena,ImmoNeuf",
+    "ERA,REMAX,Dewaele,LatourPetit,Notaris,Trevi,Promimo,CapSud,"
+    "Realo,Trovit,eRowz,Century21,Sothebys,HomeAvenue,Vlan,Athena,ImmoNeuf,"
+    "EngelVolkers,ImmoVillages",
 )
 
 # === Target cities ===
@@ -134,7 +156,6 @@ _PARKING_FR_DEFAULT = "garage,garage fermé,box,parking privé,parking couvert,c
 _PARKING_NL_DEFAULT = "garage,gesloten garage,carport,privé parking,overdekte parking,dubbele garage"
 _PARKING_EN_DEFAULT = "garage,parking,carport,private parking,indoor parking,double garage"
 
-REQUIRE_PARKING: bool = os.getenv("REQUIRE_PARKING", "true").lower() == "true"
 PARKING_KEYWORDS_FR: list[str] = _csv("KEYWORDS_PARKING_FR", _PARKING_FR_DEFAULT)
 PARKING_KEYWORDS_NL: list[str] = _csv("KEYWORDS_PARKING_NL", _PARKING_NL_DEFAULT)
 PARKING_KEYWORDS_EN: list[str] = _csv("KEYWORDS_PARKING_EN", _PARKING_EN_DEFAULT)
