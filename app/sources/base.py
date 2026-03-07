@@ -14,6 +14,7 @@ from app.config import (
     ALL_PARKING_KEYWORDS,
     DEFAULT_HEADERS,
     MAX_PRICE,
+    MIN_AREA,
     MIN_BEDROOMS,
     MIN_PRICE,
     REQUEST_DELAY_MAX,
@@ -33,11 +34,9 @@ class BaseSource(ABC):
 
     Subclasses may set ``pool_filtered_in_url = True`` when the search URL
     already restricts results to properties with a pool.  In that case the
-    ``_is_valid`` helper skips the pool check to avoid double-filtering.
-    When ``pool_filtered_in_url`` is False (the default for most agency
-    scrapers) the pool requirement is treated as advisory: listings are
-    included regardless of whether the card text mentions a pool, because
-    agency listing cards rarely expose amenity details.
+    ``_is_valid`` helper skips the pool card-text check to avoid double-filtering.
+    For all other sources, REQUIRE_POOL is enforced strictly: a listing must
+    explicitly mention pool keywords in its card text to be included.
     """
 
     name: str = "unknown"
@@ -111,13 +110,15 @@ class BaseSource(ABC):
         return datetime.now(UTC).isoformat()
 
     def _is_valid(self, listing: Listing) -> bool:
-        """Validate listing against core criteria.
+        """Validate listing against core criteria (strict mode).
 
-        Pool requirement is only enforced when ``pool_filtered_in_url=True``
-        (i.e. the search URL already requested pool properties) OR when the
-        listing card explicitly indicates a pool.  Agency sites that don't
-        expose pool info in listing cards are passed through so the user can
-        follow the link and check manually.
+        All filters are hard-enforced:
+        - price > 0 and within [MIN_PRICE, MAX_PRICE]
+        - area >= MIN_AREA when both are known
+        - bedrooms >= MIN_BEDROOMS when bedrooms > 0 (0 means unknown, pass through)
+        - REQUIRE_POOL: listing must have has_pool=True (detected from card/description text)
+        - REQUIRE_PARKING: listing must have has_parking=True
+        - no exclusion keywords in title/address/city
         """
         if listing.price == 0:
             return False  # price=0 means "OPTION", "Prix sur demande", or parse error
@@ -125,13 +126,16 @@ class BaseSource(ABC):
             return False
         if MAX_PRICE is not None and listing.price > MAX_PRICE:
             return False
+        if MIN_AREA is not None and listing.area is not None and listing.area < MIN_AREA:
+            return False
         # bedrooms=0 means "unknown" (card didn't show count) — pass through
         if MIN_BEDROOMS is not None and listing.bedrooms > 0 and listing.bedrooms < MIN_BEDROOMS:
             return False
-        # Pool: hard-filter only when URL already filtered by pool (reliable signal).
-        # For agency scrapers, has_pool=False just means "not mentioned in card" —
-        # don't reject the listing; the user can check the detail page.
-        if REQUIRE_POOL and self.pool_filtered_in_url and not listing.has_pool:
+        # Pool: strict for all sources — listing must explicitly mention pool keywords.
+        # Sources with pool_filtered_in_url=True get pool guaranteed by the search URL,
+        # so has_pool will be True from card text. Agency scrapers without card-level pool
+        # info will yield 0 results, which is correct (no false positives).
+        if REQUIRE_POOL and not listing.has_pool:
             return False
         if REQUIRE_PARKING and not listing.has_parking:
             return False

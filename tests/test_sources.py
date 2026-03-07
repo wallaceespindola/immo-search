@@ -139,3 +139,58 @@ def test_clean_int():
     assert source._clean_int("5") == 5
     assert source._clean_int(None) == 0
     assert source._clean_int("") == 0
+
+
+def test_base_source_validation_area_too_small():
+    source = ConcreteSource()
+    listing = _make_mock_listing()
+    listing = Listing(
+        id="test:area",
+        title="Belle villa avec piscine 4 façades",
+        price=400_000,
+        city="Wavre",
+        address="",
+        bedrooms=4,
+        area=35.0,  # parking space or studio — too small
+        has_pool=True,
+        has_parking=True,
+        source="Test",
+        url="https://example.com/area",
+        collected_at="2024-01-01T07:00:00+00:00",
+    )
+    with patch("app.sources.base.MIN_AREA", 80):
+        assert source._is_valid(listing) is False
+
+
+def test_base_source_validation_area_unknown_passes():
+    source = ConcreteSource()
+    listing = Listing(
+        id="test:area-none",
+        title="Belle villa avec piscine 4 façades",
+        price=400_000,
+        city="Wavre",
+        address="",
+        bedrooms=4,
+        area=None,  # area unknown — should pass through
+        has_pool=True,
+        has_parking=True,
+        source="Test",
+        url="https://example.com/area2",
+        collected_at="2024-01-01T07:00:00+00:00",
+    )
+    with patch("app.sources.base.MIN_AREA", 80):
+        assert source._is_valid(listing) is True
+
+
+def test_base_source_validation_no_pool_rejected():
+    source = ConcreteSource()
+    listing = _make_mock_listing(has_pool=False)
+    with patch("app.sources.base.REQUIRE_POOL", True):
+        assert source._is_valid(listing) is False
+
+
+def test_base_source_validation_pool_passes():
+    source = ConcreteSource()
+    listing = _make_mock_listing(has_pool=True)
+    with patch("app.sources.base.REQUIRE_POOL", True):
+        assert source._is_valid(listing) is True
