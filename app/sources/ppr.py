@@ -74,7 +74,7 @@ class PPRSource(BaseSource):
 
             # Pool: check description fields
             descriptions = " ".join(str(item.get(f"Description{c}", "") or "") for c in ["A", "B", "C", "D"]).lower()
-            has_pool = "piscine" in descriptions or "zwembad" in descriptions or "pool" in descriptions
+            has_pool = self._detect_pool(descriptions)
 
             # Parking
             has_parking = bool(

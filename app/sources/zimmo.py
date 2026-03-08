@@ -14,6 +14,7 @@ class ZimmoSource(BaseSource):
 
     name = "Zimmo"
     tier = 1
+    pool_filtered_in_url = True  # URL already filters by pool
 
     _SEARCH_URL = "https://www.zimmo.be/fr/rechercher/"
 
@@ -75,9 +76,9 @@ class ZimmoSource(BaseSource):
                     bed_match = re.search(r"(\d+)\s*(?:chambres?|slaapkamers?|ch\.)", card.get_text(), re.I)
                     bedrooms = int(bed_match.group(1)) if bed_match else 0
 
-                text_lower = card.get_text().lower()
-                has_pool = "piscine" in text_lower or "zwembad" in text_lower
-                has_parking = self._detect_parking(card.get_text())
+                text = card.get_text()
+                has_pool = self._detect_pool(text)
+                has_parking = self._detect_parking(text)
 
                 native_id = ""
                 if url:

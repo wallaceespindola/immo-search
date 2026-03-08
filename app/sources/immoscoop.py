@@ -80,7 +80,7 @@ class ImmoScoopSource(BaseSource):
         area = float(area_raw) if area_raw else None
 
         title = (item.get("title") or "Maison à vendre") if isinstance(item.get("title"), str) else "Maison à vendre"
-        has_pool = "piscine" in title.lower() or "zwembad" in title.lower()
+        has_pool = self._detect_pool(title)
         has_parking = self._detect_parking(title)
 
         if not self._in_target_area(postal_code, city):

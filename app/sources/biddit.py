@@ -61,8 +61,7 @@ class BidditSource(BaseSource):
                 bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?)", text, re.I)
                 bedrooms = int(bed_match.group(1)) if bed_match else 0
 
-                text_lower = text.lower()
-                has_pool = "piscine" in text_lower or "zwembad" in text_lower
+                has_pool = self._detect_pool(text)
                 has_parking = self._detect_parking(text)
 
                 if bedrooms < MIN_BEDROOMS:

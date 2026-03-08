@@ -15,6 +15,7 @@ class Century21Source(BaseSource):
 
     name = "Century21"
     tier = 3
+    pool_filtered_in_url = True  # URL already filters by pool
 
     _SEARCH_URL = "https://www.century21.be/fr/a-vendre/maison"
 
@@ -72,8 +73,7 @@ class Century21Source(BaseSource):
                 area_match = re.search(r"(\d+)\s*m²", text, re.I)
                 area = float(area_match.group(1)) if area_match else None
 
-                text_lower = text.lower()
-                has_pool = "piscine" in text_lower or "zwembad" in text_lower
+                has_pool = self._detect_pool(text)
                 has_parking = self._detect_parking(text)
 
                 if not self._in_target_area(None, city):

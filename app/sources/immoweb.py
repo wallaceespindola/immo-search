@@ -210,8 +210,7 @@ class ImmowebSource(BaseSource):
                     area_m = re.search(r"(\d+)\s*m²", text, re.I)
                     area = float(area_m.group(1)) if area_m else None
 
-                    text_lower = text.lower()
-                    has_pool = "piscine" in text_lower or "zwembad" in text_lower or "swimming" in text_lower
+                    has_pool = self._detect_pool(text)
                     has_parking = self._detect_parking(text)
 
                     link_el = card.query_selector("a[href*='/classified/']")

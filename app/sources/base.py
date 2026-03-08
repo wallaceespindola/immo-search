@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from app.config import (
     ALL_EXCLUSION_KEYWORDS,
     ALL_PARKING_KEYWORDS,
+    ALL_POOL_KEYWORDS,
     ALL_STATUS_EXCLUSION_KEYWORDS,
     DEFAULT_HEADERS,
     MAX_PRICE,
@@ -111,15 +112,15 @@ class BaseSource(ABC):
         return datetime.now(UTC).isoformat()
 
     def _is_valid(self, listing: Listing) -> bool:
-        """Validate listing against core criteria (strict mode).
+        """Validate listing against core criteria.
 
-        All filters are hard-enforced:
-        - price > 0 and within [MIN_PRICE, MAX_PRICE]
-        - area >= MIN_AREA when both are known
-        - bedrooms >= MIN_BEDROOMS when bedrooms > 0 (0 means unknown, pass through)
-        - REQUIRE_POOL: listing must have has_pool=True (detected from card/description text)
-        - REQUIRE_PARKING: listing must have has_parking=True
-        - no exclusion keywords in title/address/city
+        - status keywords (vendu/verkocht/sous option…) → reject immediately
+        - price=0, MIN_PRICE, MAX_PRICE, MIN_AREA, MIN_BEDROOMS: hard filters
+        - REQUIRE_POOL:
+            pool_filtered_in_url=True  → URL guarantees pool, skip text check
+            pool_filtered_in_url=False → must detect pool keywords in card text
+        - REQUIRE_PARKING: must detect parking keywords in card text
+        - exclusion keywords in title/address/city → reject
         """
         # Reject listings marked as sold or under option/compromise
         title_lower = listing.title.lower()
@@ -136,11 +137,9 @@ class BaseSource(ABC):
         # bedrooms=0 means "unknown" (card didn't show count) — pass through
         if MIN_BEDROOMS is not None and listing.bedrooms > 0 and listing.bedrooms < MIN_BEDROOMS:
             return False
-        # Pool: strict for all sources — listing must explicitly mention pool keywords.
-        # Sources with pool_filtered_in_url=True get pool guaranteed by the search URL,
-        # so has_pool will be True from card text. Agency scrapers without card-level pool
-        # info will yield 0 results, which is correct (no false positives).
-        if REQUIRE_POOL and not listing.has_pool:
+        # Pool: URL-filtered sources trust the URL guarantee; agency scrapers must
+        # have pool keywords detected from card text, or the listing is rejected.
+        if REQUIRE_POOL and not self.pool_filtered_in_url and not listing.has_pool:
             return False
         if REQUIRE_PARKING and not listing.has_parking:
             return False
@@ -151,6 +150,11 @@ class BaseSource(ABC):
         """Return True if parking/garage keywords are found in the text."""
         text_lower = text.lower()
         return any(kw.lower() in text_lower for kw in ALL_PARKING_KEYWORDS)
+
+    def _detect_pool(self, text: str) -> bool:
+        """Return True if pool keywords are found in the text (uses full keyword list from config)."""
+        text_lower = text.lower()
+        return any(kw.lower() in text_lower for kw in ALL_POOL_KEYWORDS)
 
     def _in_target_area(self, postal_code: str | None, city: str | None) -> bool:
         """Check if the property is in the target geographic area."""

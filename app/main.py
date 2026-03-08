@@ -225,6 +225,8 @@ def run() -> None:
 
     # 4. Generate reports (always, even if no new listings)
     all_unnotified = get_unnotified()
+    # Sort by quality: pool first → more bedrooms → lower price → larger area
+    all_unnotified.sort(key=lambda x: (-int(x.has_pool), -x.bedrooms, x.price, -(x.area or 0)))
     if all_unnotified:
         _generate_html_report(all_unnotified, today)
         _generate_csv_report(all_unnotified, today)

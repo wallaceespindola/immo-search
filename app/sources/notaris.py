@@ -19,6 +19,7 @@ class NotarisSource(BaseSource):
 
     name = "Notaris"
     tier = 2
+    pool_filtered_in_url = True  # URL already filters by pool
 
     _API_URL = "https://immo.notaris.be/api/properties"
     _SEARCH_URL = "https://immo.notaris.be/fr/biens-a-vendre-dans-la-province/brabant-wallon?province=WBR"
@@ -113,7 +114,7 @@ class NotarisSource(BaseSource):
             area = float(area_raw) if area_raw else None
 
             text = f"{title} {item.get('description', '')}".lower()
-            has_pool = bool(item.get("hasPool") or item.get("swimmingPool")) or "piscine" in text or "zwembad" in text
+            has_pool = bool(item.get("hasPool") or item.get("swimmingPool")) or self._detect_pool(text)
             has_parking = bool(item.get("hasGarage") or item.get("parking")) or self._detect_parking(text)
 
             url = item.get("url", item.get("link", ""))
@@ -179,8 +180,7 @@ class NotarisSource(BaseSource):
                 area_match = re.search(r"(\d+)\s*m²", text, re.I)
                 area = float(area_match.group(1)) if area_match else None
 
-                text_lower = text.lower()
-                has_pool = "piscine" in text_lower or "zwembad" in text_lower
+                has_pool = self._detect_pool(text)
                 has_parking = self._detect_parking(text)
 
                 if not self._in_target_area(postal_code, city):
