@@ -46,10 +46,11 @@ EMAIL_TO: str = os.getenv("EMAIL_TO", "")
 # === Search criteria ===
 # Removing or emptying any of these in .env disables that filter entirely.
 MAX_PRICE: int | None = _opt_int("MAX_PRICE")  # None = no price limit
-MIN_PRICE: int | None = _opt_int("MIN_PRICE")  # None = no minimum; set e.g. 100000
+MIN_PRICE: int | None = _opt_int("MIN_PRICE")  # None = no minimum; e.g. 150000
 MIN_BEDROOMS: int | None = _opt_int("MIN_BEDROOMS")  # None = any bedroom count
-REQUIRE_POOL: bool = _opt_bool("REQUIRE_POOL")  # empty/missing = pool not required
-REQUIRE_PARKING: bool = _opt_bool("REQUIRE_PARKING")  # empty/missing = parking not required
+MIN_AREA: int | None = _opt_int("MIN_AREA")  # Minimum living area m²; e.g. 100
+REQUIRE_POOL: bool = _opt_bool("REQUIRE_POOL")  # true = only listings with pool detected
+REQUIRE_PARKING: bool = _opt_bool("REQUIRE_PARKING")  # true = only listings with garage/parking
 
 # PEB / EPC energy ratings filter (A=excellent, B=good, C=poor, D=bad)
 # Comma-separated list. Empty/missing = no EPC filter applied.
@@ -154,6 +155,18 @@ PARKING_KEYWORDS_FR: list[str] = _csv("KEYWORDS_PARKING_FR", _PARKING_FR_DEFAULT
 PARKING_KEYWORDS_NL: list[str] = _csv("KEYWORDS_PARKING_NL", _PARKING_NL_DEFAULT)
 PARKING_KEYWORDS_EN: list[str] = _csv("KEYWORDS_PARKING_EN", _PARKING_EN_DEFAULT)
 ALL_PARKING_KEYWORDS: list[str] = PARKING_KEYWORDS_FR + PARKING_KEYWORDS_NL + PARKING_KEYWORDS_EN
+
+# Status exclusion keywords — reject listings marked as sold or under option/compromise
+_STATUS_EXCL_FR_DEFAULT = "vendu,sous option,sous compromis,sous offre"
+_STATUS_EXCL_NL_DEFAULT = "verkocht,onder optie,onder compromis,bod aanvaard"
+_STATUS_EXCL_EN_DEFAULT = "sold,under option,under offer"
+
+STATUS_EXCLUSION_KEYWORDS_FR: list[str] = _csv("KEYWORDS_STATUS_EXCL_FR", _STATUS_EXCL_FR_DEFAULT)
+STATUS_EXCLUSION_KEYWORDS_NL: list[str] = _csv("KEYWORDS_STATUS_EXCL_NL", _STATUS_EXCL_NL_DEFAULT)
+STATUS_EXCLUSION_KEYWORDS_EN: list[str] = _csv("KEYWORDS_STATUS_EXCL_EN", _STATUS_EXCL_EN_DEFAULT)
+ALL_STATUS_EXCLUSION_KEYWORDS: list[str] = (
+    STATUS_EXCLUSION_KEYWORDS_FR + STATUS_EXCLUSION_KEYWORDS_NL + STATUS_EXCLUSION_KEYWORDS_EN
+)
 
 # Garden keywords
 GARDEN_KEYWORDS_FR: list[str] = ["jardin", "grand terrain", "terrasse", "espace extérieur"]

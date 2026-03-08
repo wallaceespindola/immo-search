@@ -194,3 +194,60 @@ def test_base_source_validation_pool_passes():
     listing = _make_mock_listing(has_pool=True)
     with patch("app.sources.base.REQUIRE_POOL", True):
         assert source._is_valid(listing) is True
+
+
+def test_base_source_validation_vendu_rejected():
+    source = ConcreteSource()
+    listing = Listing(
+        id="test:vendu",
+        title="VENDU — Villa avec piscine 4 façades",
+        price=500_000,
+        city="Wavre",
+        address="",
+        bedrooms=4,
+        area=200.0,
+        has_pool=True,
+        has_parking=True,
+        source="Test",
+        url="https://example.com/vendu",
+        collected_at="2024-01-01T07:00:00+00:00",
+    )
+    assert source._is_valid(listing) is False
+
+
+def test_base_source_validation_sous_option_rejected():
+    source = ConcreteSource()
+    listing = Listing(
+        id="test:option",
+        title="Sous option — Belle villa 4 chambres",
+        price=480_000,
+        city="Waterloo",
+        address="",
+        bedrooms=4,
+        area=180.0,
+        has_pool=True,
+        has_parking=True,
+        source="Test",
+        url="https://example.com/option",
+        collected_at="2024-01-01T07:00:00+00:00",
+    )
+    assert source._is_valid(listing) is False
+
+
+def test_base_source_validation_verkocht_rejected():
+    source = ConcreteSource()
+    listing = Listing(
+        id="test:verkocht",
+        title="Verkocht — Villa met zwembad",
+        price=550_000,
+        city="Overijse",
+        address="",
+        bedrooms=4,
+        area=220.0,
+        has_pool=True,
+        has_parking=True,
+        source="Test",
+        url="https://example.com/verkocht",
+        collected_at="2024-01-01T07:00:00+00:00",
+    )
+    assert source._is_valid(listing) is False

@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from app.config import (
     ALL_EXCLUSION_KEYWORDS,
     ALL_PARKING_KEYWORDS,
+    ALL_STATUS_EXCLUSION_KEYWORDS,
     DEFAULT_HEADERS,
     MAX_PRICE,
     MIN_AREA,
@@ -120,6 +121,10 @@ class BaseSource(ABC):
         - REQUIRE_PARKING: listing must have has_parking=True
         - no exclusion keywords in title/address/city
         """
+        # Reject listings marked as sold or under option/compromise
+        title_lower = listing.title.lower()
+        if any(kw.lower() in title_lower for kw in ALL_STATUS_EXCLUSION_KEYWORDS):
+            return False
         if listing.price == 0:
             return False  # price=0 means "OPTION", "Prix sur demande", or parse error
         if MIN_PRICE is not None and listing.price < MIN_PRICE:
