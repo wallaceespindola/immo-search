@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# immo-search — daily execution script
-# Usage: bash run.sh
-# Scheduled via macOS launchd at 07:30 daily
+# immo-search — execution script
+# Usage:
+#   bash run.sh          → daily run (fetch new listings, send alert)
+#   bash run.sh --week   → weekly digest (best of the past 7 days, sent Saturday)
+# Scheduled via macOS launchd:
+#   com.immo-search.plist        → daily 07:30
+#   com.immo-search-weekly.plist → Saturday 09:00
 
 set -euo pipefail
 
@@ -16,9 +20,18 @@ fi
 # Ensure log directory exists
 mkdir -p logs output
 
-# Run the agent
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting immo-search..." | tee -a logs/run.log
+# Determine log file based on mode
+MODE_FLAG="${1:-}"
+if [[ "$MODE_FLAG" == "--week" ]]; then
+    LOG_FILE="logs/weekly.log"
+    LABEL="immo-search (weekly digest)"
+else
+    LOG_FILE="logs/run.log"
+    LABEL="immo-search"
+fi
 
-uv run python -m app.main 2>&1 | tee -a logs/run.log
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting ${LABEL}..." | tee -a "$LOG_FILE"
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] immo-search completed." | tee -a logs/run.log
+uv run python -m app.main $MODE_FLAG 2>&1 | tee -a "$LOG_FILE"
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${LABEL} completed." | tee -a "$LOG_FILE"

@@ -6,7 +6,7 @@ import sqlite3
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.config import STATE_DB
 
@@ -125,6 +125,30 @@ def get_unnotified() -> list[Listing]:
     """Return listings that have not yet been emailed."""
     with _get_conn() as conn:
         rows = conn.execute("SELECT * FROM listings WHERE notified = 0 ORDER BY collected_at DESC").fetchall()
+    return [_row_to_listing(r) for r in rows]
+
+
+def get_week_listings(days: int = 7) -> list[Listing]:
+    """Return all listings from the past N days, ranked by quality score.
+
+    Ranking: pool first → more bedrooms → lower price → larger area.
+    Includes both notified and unnotified listings so the weekly digest
+    always shows the best of the week regardless of daily notification state.
+    """
+    since = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+    with _get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM listings
+            WHERE collected_at >= ?
+            ORDER BY
+                has_pool DESC,
+                bedrooms DESC,
+                price ASC,
+                COALESCE(area, 0) DESC
+            """,
+            (since,),
+        ).fetchall()
     return [_row_to_listing(r) for r in rows]
 
 

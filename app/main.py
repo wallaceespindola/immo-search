@@ -3,16 +3,17 @@ immo-search — Personal Real Estate Hunter
 Main orchestrator: fetch → deduplicate → persist → report → notify
 """
 
+import argparse
 import csv
 import logging
 import sys
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from app.config import IMMO_SITES_ACTIVE, LOGS_DIR, MAX_PRICE, MIN_BEDROOMS, OUTPUT_DIR, TARGET_CITIES
-from app.mailer import send_notification
+from app.mailer import send_notification, send_weekly_digest
 from app.sources import ALL_SOURCES
-from app.storage import Listing, get_unnotified, init_db, mark_notified, save_listing
+from app.storage import Listing, get_unnotified, get_week_listings, init_db, mark_notified, save_listing
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -252,5 +253,47 @@ def run() -> None:
     logger.info("=" * 60)
 
 
+def run_weekly(days: int = 7) -> None:
+    """Send weekly digest of the best listings from the past N days."""
+    today = date.today()
+    date_from = today - timedelta(days=days)
+
+    logger.info("=" * 60)
+    logger.info("immo-search — weekly digest: %s → %s", date_from.isoformat(), today.isoformat())
+    logger.info("=" * 60)
+
+    init_db()
+    listings = get_week_listings(days=days)
+
+    logger.info("Weekly digest: %d listings found in past %d days", len(listings), days)
+    for item in listings:
+        logger.info("  [%s] %s — %s €%d", item.source, item.title[:60], item.city, item.price)
+
+    success = send_weekly_digest(listings, date_from, today)
+    if success:
+        logger.info("Weekly digest sent: %d listings.", len(listings))
+    else:
+        logger.warning("Weekly digest email failed.")
+    logger.info("=" * 60)
+
+
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description="immo-search — Belgian real estate hunter")
+    parser.add_argument(
+        "--week",
+        action="store_true",
+        help="Send weekly digest of best findings from the past 7 days (scheduled Saturday)",
+    )
+    parser.add_argument(
+        "--week-days",
+        type=int,
+        default=7,
+        metavar="N",
+        help="Number of days to look back for the weekly digest (default: 7)",
+    )
+    args = parser.parse_args()
+
+    if args.week:
+        run_weekly(days=args.week_days)
+    else:
+        run()

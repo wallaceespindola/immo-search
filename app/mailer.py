@@ -156,3 +156,156 @@ def send_notification(listings: list[Listing]) -> bool:
     except OSError as exc:
         logger.error("Network error sending email: %s", exc)
     return False
+
+
+_WEEKLY_BODY_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  body {{ font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: auto; padding: 20px; }}
+  h1 {{ color: #6c3483; border-bottom: 2px solid #6c3483; padding-bottom: 8px; }}
+  .summary {{ background: #f5eef8; border-left: 4px solid #6c3483; padding: 12px 16px; margin: 16px 0; }}
+  .filters {{ background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px;
+             margin: 16px 0; font-size: 0.9em; }}
+  .rank {{ display: inline-block; background: #6c3483; color: white; border-radius: 50%;
+           width: 24px; height: 24px; text-align: center; line-height: 24px;
+           font-weight: bold; font-size: 0.85em; margin-right: 6px; }}
+  .listing {{ border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin: 12px 0; }}
+  .listing h3 {{ margin: 0 0 8px 0; color: #6c3483; }}
+  .listing .price {{ font-size: 1.3em; font-weight: bold; color: #27ae60; }}
+  .listing .details {{ color: #555; font-size: 0.9em; margin: 6px 0; }}
+  .listing a {{ display: inline-block; margin-top: 8px; background: #6c3483; color: white;
+                padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 0.9em; }}
+  .source-badge {{ display: inline-block; background: #d7bde2; color: #6c3483;
+                   padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 8px; }}
+  .pool-badge {{ display: inline-block; background: #a9dfbf; color: #196f3d;
+                 padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 4px; }}
+  .parking-badge {{ display: inline-block; background: #d5d8dc; color: #2c3e50;
+                    padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 4px; }}
+  footer {{ margin-top: 30px; font-size: 0.8em; color: #999; text-align: center; }}
+</style>
+</head>
+<body>
+<h1>🏆 Immo Search — Best of the Week</h1>
+
+<div class="summary">
+  <strong>{count} propriété(s)</strong> trouvée(s) du {date_from} au {date_to}<br>
+  Classées par : piscine · chambres · prix · surface
+</div>
+
+<div class="filters">
+  <strong>Filtres appliqués :</strong><br>
+  • Type : Maison 4 façades (détachée)<br>
+  • Chambres : {min_bedrooms}<br>
+  • Piscine : Requise<br>
+  • Prix maximum : €{max_price}<br>
+  • Zones : {cities}
+</div>
+
+<h2>Top propriétés de la semaine</h2>
+{listings_html}
+
+<footer>
+  Généré par immo-search — Résumé hebdomadaire (samedi)<br>
+  Brabant Wallon · Brabant Flamand · Province de Namur, Belgique
+</footer>
+</body>
+</html>
+"""
+
+_WEEKLY_LISTING_TEMPLATE = """
+<div class="listing">
+  <h3><span class="rank">{rank}</span>{title}
+    <span class="source-badge">{source}</span>{pool_badge}{parking_badge}
+  </h3>
+  <div class="price">€{price:,}</div>
+  <div class="details">
+    📍 {city}{address_part}<br>
+    🛏️ {bedrooms} chambres{area_part}<br>
+    📅 Trouvé le {collected_date}
+  </div>
+  <a href="{url}" target="_blank">Voir l'annonce →</a>
+</div>
+"""
+
+
+def send_weekly_digest(listings: list[Listing], date_from: date, date_to: date) -> bool:
+    """Send weekly digest email with best findings of the week. Returns True on success."""
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not EMAIL_TO:
+        logger.warning("Email credentials not configured — skipping weekly digest.")
+        return False
+
+    count = len(listings)
+    date_from_str = date_from.strftime("%d/%m/%Y")
+    date_to_str = date_to.strftime("%d/%m/%Y")
+
+    if count == 0:
+        subject = f"[immo-search] Weekly Digest — 0 listings this week — {date_to_str}"
+        listings_html = "<p style='color:#999;font-style:italic;'>Aucune propriété trouvée cette semaine.</p>"
+    else:
+        noun = "Property" if count == 1 else "Properties"
+        subject = f"[immo-search] Weekly Digest — {count} Best {noun} — {date_from_str} → {date_to_str}"
+        parts = []
+        for rank, listing in enumerate(listings, start=1):
+            pool_badge = '<span class="pool-badge">🏊 Piscine</span>' if listing.has_pool else ""
+            parking_badge = '<span class="parking-badge">🚗 Parking</span>' if listing.has_parking else ""
+            address_part = f" — {listing.address}" if listing.address else ""
+            area_part = f" · {listing.area:.0f} m²" if listing.area else ""
+            try:
+                collected_date = listing.collected_at[:10]
+            except Exception:
+                collected_date = "—"
+            parts.append(
+                _WEEKLY_LISTING_TEMPLATE.format(
+                    rank=rank,
+                    title=listing.title,
+                    source=listing.source,
+                    pool_badge=pool_badge,
+                    parking_badge=parking_badge,
+                    price=listing.price,
+                    city=listing.city,
+                    address_part=address_part,
+                    bedrooms=listing.bedrooms,
+                    area_part=area_part,
+                    collected_date=collected_date,
+                    url=listing.url,
+                )
+            )
+        listings_html = "\n".join(parts)
+
+    cities_preview = ", ".join(TARGET_CITIES[:6]) + "..."
+
+    body_html = _WEEKLY_BODY_TEMPLATE.format(
+        count=count,
+        date_from=date_from_str,
+        date_to=date_to_str,
+        min_bedrooms=f"{MIN_BEDROOMS}+" if MIN_BEDROOMS is not None else "—",
+        max_price=f"{MAX_PRICE:,}" if MAX_PRICE is not None else "—",
+        cities=cities_preview,
+        listings_html=listings_html,
+    )
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = GMAIL_USER
+    msg["To"] = EMAIL_TO
+    msg.attach(MIMEText(body_html, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            smtp.sendmail(GMAIL_USER, EMAIL_TO, msg.as_string())
+        logger.info("Weekly digest sent: '%s' → %s", subject, EMAIL_TO)
+        return True
+    except smtplib.SMTPAuthenticationError:
+        logger.error("SMTP authentication failed. Check GMAIL_APP_PASSWORD.")
+    except smtplib.SMTPException as exc:
+        logger.error("SMTP error: %s", exc)
+    except OSError as exc:
+        logger.error("Network error sending weekly digest: %s", exc)
+    return False

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.storage import Listing, get_unnotified, init_db, is_known, mark_notified, save_listing
+from app.storage import Listing, get_unnotified, get_week_listings, init_db, is_known, mark_notified, save_listing
 
 
 def _make_listing(
@@ -111,3 +111,42 @@ def test_multiple_listings_saved(temp_db):
         save_listing(listing)
     unnotified = get_unnotified()
     assert len(unnotified) == 5
+
+
+def test_get_week_listings_returns_recent(temp_db):
+    from datetime import UTC, datetime, timedelta
+
+    init_db()
+    now = datetime.now(UTC)
+    # Recent listing (today)
+    recent = _make_listing(listing_id="week:recent")
+    recent = Listing(**{**recent.__dict__, "collected_at": now.isoformat()})
+    save_listing(recent)
+    # Old listing (10 days ago — outside 7-day window)
+    old_ts = (now - timedelta(days=10)).isoformat()
+    old = _make_listing(listing_id="week:old")
+    old = Listing(**{**old.__dict__, "collected_at": old_ts})
+    save_listing(old)
+
+    results = get_week_listings(days=7)
+    ids = [r.id for r in results]
+    assert "week:recent" in ids
+    assert "week:old" not in ids
+
+
+def test_get_week_listings_sorted_by_quality(temp_db):
+    from datetime import UTC, datetime
+
+    init_db()
+    now = datetime.now(UTC).isoformat()
+    # Pool + 5 bedrooms + cheap
+    top = _make_listing(listing_id="week:top", bedrooms=5, price=350_000, has_pool=True)
+    top = Listing(**{**top.__dict__, "collected_at": now})
+    # No pool + 4 bedrooms + expensive
+    bottom = _make_listing(listing_id="week:bottom", bedrooms=4, price=590_000, has_pool=False)
+    bottom = Listing(**{**bottom.__dict__, "collected_at": now})
+    save_listing(top)
+    save_listing(bottom)
+
+    results = get_week_listings(days=7)
+    assert results[0].id == "week:top"
