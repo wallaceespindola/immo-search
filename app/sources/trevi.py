@@ -47,16 +47,16 @@ class TreviSource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select("div.card-estate, div.property-card, article.bien-item, li.listing-result")
+        # Trevi uses <a class="card-estate"> as the card wrapper/link
+        cards = soup.select("a.card-estate")
 
         for card in cards:
             try:
-                link_el = card.select_one("a[href]")
-                url = link_el["href"] if link_el else ""
+                url = card.get("href", "")
                 if url and not url.startswith("http"):
                     url = f"https://www.trevi.be{url}"
 
-                title_el = card.select_one(".card-estate__category, h2, h3, .title")
+                title_el = card.select_one("h2, h3, .title")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
 
                 price_el = card.select_one(".card-estate__price, [class*='price'], [class*='prix']")

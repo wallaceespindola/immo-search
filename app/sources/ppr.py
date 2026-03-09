@@ -23,6 +23,7 @@ class PPRSource(BaseSource):
 
     name = "PPR"
     tier = 2
+    pool_filtered_in_url = True  # API sends HasSwimmingPool=True when REQUIRE_POOL
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []

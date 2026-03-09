@@ -1,8 +1,10 @@
-"""Zimmo source adapter — Tier 1."""
+"""Zimmo source adapter — Tier 1 (JSON extraction from embedded script)."""
 
+import json
 import logging
+import re
 
-from app.config import MAX_PRICE, MIN_BEDROOMS
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -10,87 +12,103 @@ logger = logging.getLogger(__name__)
 
 
 class ZimmoSource(BaseSource):
-    """Scraper for Zimmo.be — major Belgian property portal."""
+    """Scraper for Zimmo.be — major Belgian property portal.
+
+    Extracts property data from the JSON embedded in the page's app.start() script.
+    Uses separate regional search URLs for Brabant Wallon (city-level) and Namur.
+    """
 
     name = "Zimmo"
     tier = 1
-    pool_filtered_in_url = True  # URL already filters by pool
+    pool_filtered_in_url = True  # URL includes ?features=has_swimming_pool:true
 
-    _SEARCH_URL = "https://www.zimmo.be/fr/rechercher/"
+    # Region slugs that return results: city-level for BW, province-level for Namur + VBR
+    _REGION_URLS = [
+        "https://www.zimmo.be/fr/wavre-1300/a-vendre/maison/",
+        "https://www.zimmo.be/fr/ottignies-louvain-la-neuve-1340/a-vendre/maison/",
+        "https://www.zimmo.be/fr/rixensart-1330/a-vendre/maison/",
+        "https://www.zimmo.be/fr/la-hulpe-1310/a-vendre/maison/",
+        "https://www.zimmo.be/fr/genval-1332/a-vendre/maison/",
+        "https://www.zimmo.be/fr/namur/a-vendre/maison/",
+        "https://www.zimmo.be/fr/province-du-brabant-flamand/a-vendre/maison/",
+    ]
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
-        params = {
-            "search": json.dumps(
-                {
-                    "type": {"or": ["HOUSE"]},
-                    "price": {"max": MAX_PRICE},
-                    "bedrooms": {"min": MIN_BEDROOMS},
-                    "features": {"has_swimming_pool": True},
-                    "status": {"or": ["NORMAL", "ON_FUNDA"]},
-                }
-            ),
-            "sort": "date_desc",
-            "page": 1,
-        }
+        seen_codes: set[str] = set()
 
-        for page in range(1, 4):
-            params["page"] = page
-            resp = self._get(self._SEARCH_URL, params={"page": page})
+        qs_parts = [f"min_bedrooms={MIN_BEDROOMS}", f"max_price={MAX_PRICE}"]
+        if REQUIRE_POOL:
+            qs_parts.append("features=has_swimming_pool:true")
+        filter_qs = "&".join(qs_parts)
+
+        for base_url in self._REGION_URLS:
+            url = base_url + "?" + filter_qs
+            resp = self._get(url)
             if resp is None:
-                break
+                continue
 
-            soup = self._parse_html(resp.text)
-            page_listings = self._parse_results(soup)
-            if not page_listings:
-                break
+            page_listings = self._parse_script(resp.text, seen_codes)
             listings.extend(page_listings)
 
         return listings
 
-    def _parse_results(self, soup) -> list[Listing]:
+    def _parse_script(self, html: str, seen_codes: set[str]) -> list[Listing]:
+        """Extract properties from the embedded app.start() JSON script."""
         listings = []
-        cards = soup.select("article.property-item, div.property-list__item, li.search-result")
 
-        for card in cards:
+        # Find the app.start({...properties: [...]...}) script
+        m_start = re.search(r"properties:\s*\[", html)
+        if not m_start:
+            return listings
+
+        start = m_start.end() - 1  # position of '['
+        depth = 0
+        end = start
+        for i in range(start, min(start + 300_000, len(html))):
+            c = html[i]
+            if c == "[":
+                depth += 1
+            elif c == "]":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+
+        try:
+            props = json.loads(html[start:end])
+        except (json.JSONDecodeError, ValueError):
+            return listings
+
+        for item in props:
             try:
-                link_el = card.select_one("a[href]")
-                url = link_el["href"] if link_el else ""
-                if url and not url.startswith("http"):
-                    url = f"https://www.zimmo.be{url}"
+                code = item.get("code", "")
+                if not code or code in seen_codes:
+                    continue
+                seen_codes.add(code)
 
-                title_el = card.select_one("h2, h3, .property-title")
-                title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
-
-                price_el = card.select_one(".property-price, [class*='price']")
-                price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
-
-                city_el = card.select_one(".property-city, .location, [class*='locality']")
-                city = city_el.get_text(strip=True) if city_el else ""
-
-                bed_el = card.select_one("[class*='bedroom'], [class*='slaapkamer'], [class*='chambre']")
-                bedrooms = self._clean_int(bed_el.get_text(strip=True) if bed_el else "0")
-                if bedrooms == 0:
-                    import re
-
-                    bed_match = re.search(r"(\d+)\s*(?:chambres?|slaapkamers?|ch\.)", card.get_text(), re.I)
-                    bedrooms = int(bed_match.group(1)) if bed_match else 0
-
-                text = card.get_text()
-                has_pool = self._detect_pool(text)
-                has_parking = self._detect_parking(text)
-
-                native_id = ""
-                if url:
-                    import re
-
-                    m = re.search(r"/(\d+)/?$", url)
-                    native_id = m.group(1) if m else ""
-
-                if not self._in_target_area(None, city):
+                url_path = item.get("url", "") or item.get("pand_url", "")
+                url = f"https://www.zimmo.be{url_path}" if url_path and not url_path.startswith("http") else url_path
+                if not url:
                     continue
 
-                listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)
+                price = int(item.get("prijs") or item.get("zprijs") or 0)
+                city = (item.get("gemeente") or "").strip()
+                postal_code = str(item.get("postcode") or "")
+                bedrooms = int(item.get("slaapkamers") or 0)
+                area_raw = item.get("b_woonopp")
+                area = float(area_raw) if area_raw else None
+                title = item.get("type", "Maison à vendre")
+
+                # Pool/parking detection: use any available text
+                description = str(item.get("a_beschrijf") or item.get("html") or "")
+                has_pool = self._detect_pool(description)
+                has_parking = self._detect_parking(description)
+
+                if not self._in_target_area(postal_code, city):
+                    continue
+
+                listing_id = Listing.make_id(self.name, code, url, city, "", price, bedrooms)
                 listings.append(
                     Listing(
                         id=listing_id,
@@ -99,7 +117,7 @@ class ZimmoSource(BaseSource):
                         city=city,
                         address="",
                         bedrooms=bedrooms,
-                        area=None,
+                        area=area,
                         has_pool=has_pool,
                         has_parking=has_parking,
                         source=self.name,
@@ -111,7 +129,3 @@ class ZimmoSource(BaseSource):
                 logger.debug("[%s] Parse error: %s", self.name, exc)
 
         return listings
-
-
-# Fix missing import at module level
-import json  # noqa: E402 — needed for params dict above

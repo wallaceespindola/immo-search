@@ -52,7 +52,8 @@ class ERASource(BaseSource):
 
     def _parse_results(self, soup) -> list[Listing]:
         listings = []
-        cards = soup.select("div.property-card, article.property-item, div.listing-item, li.result-item")
+        # ERA uses Drupal: article.node--property--teaser is each listing card
+        cards = soup.select("article.node--property--teaser")
 
         for card in cards:
             try:
@@ -61,33 +62,41 @@ class ERASource(BaseSource):
                 if url and not url.startswith("http"):
                     url = f"https://www.era.be{url}"
 
-                title_el = card.select_one("h2, h3, .property-title, .card-title")
+                title_el = card.select_one(".field--name-title, h2, h3")
                 title = title_el.get_text(strip=True) if title_el else "Maison à vendre"
 
-                price_el = card.select_one("[class*='price'], [class*='prix']")
+                price_el = card.select_one(".field--price, [class*='price'], [class*='prix']")
                 price = self._clean_price(price_el.get_text(strip=True) if price_el else "0")
 
-                city_el = card.select_one(
-                    "[class*='city'], [class*='location'], [class*='locality'], [class*='commune']"
-                )
-                city = city_el.get_text(strip=True) if city_el else ""
+                # City is embedded in URL: /fr/a-vendre/{city}/maison/...
+                city = ""
+                postal_code = ""
+                if url:
+                    m_city = re.search(r"/a-vendre/([^/]+)/", url)
+                    if m_city:
+                        city = m_city.group(1).replace("-", " ").title()
 
                 text = card.get_text()
-                bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?|bedrooms?)", text, re.I)
+                # Postal code from card text: "1234 City"
+                pc_match = re.search(r"\b(\d{4})\b", text)
+                if pc_match:
+                    postal_code = pc_match.group(1)
+
+                bed_match = re.search(r"(\d+)\s*(?:ch(?:ambres?)?|slaapkamers?|bedrooms?|chbre)", text, re.I)
                 bedrooms = int(bed_match.group(1)) if bed_match else 0
 
-                area_match = re.search(r"(\d+)\s*m²", text, re.I)
+                area_match = re.search(r"(\d+)\s*m²(?:\s*de\s*surf)?", text, re.I)
                 area = float(area_match.group(1)) if area_match else None
 
                 has_pool = self._detect_pool(text)
                 has_parking = self._detect_parking(text)
 
-                if not self._in_target_area(None, city):
+                if not self._in_target_area(postal_code, city):
                     continue
 
                 native_id = ""
                 if url:
-                    m = re.search(r"/(\d{4,})/?(?:\?|$|-)", url)
+                    m = re.search(r"/(\d{5,})/?(?:\?|$)", url)
                     native_id = m.group(1) if m else ""
 
                 listing_id = Listing.make_id(self.name, native_id, url, city, "", price, bedrooms)

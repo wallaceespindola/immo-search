@@ -15,6 +15,7 @@ class LesViviersSource(BaseSource):
 
     name = "LesViviers"
     tier = 3
+    pool_filtered_in_url = True  # URL sends piscine=1 when REQUIRE_POOL
 
     _SEARCH_URL = "https://www.lesviviers.be/biens/acheter/"
 

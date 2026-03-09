@@ -3,6 +3,7 @@
 import logging
 import re
 
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -14,11 +15,15 @@ class ImmoBWSource(BaseSource):
 
     name = "ImmoBW"
     tier = 2
+    pool_filtered_in_url = True  # Pool info not shown in listing cards; rely on area/city filtering
 
     _SEARCH_URL = "https://www.immobw.be/fr/agence-immobiliere-wavre-maison-appartements-a-vendre"
 
     def _fetch(self) -> list[Listing]:
-        resp = self._get(self._SEARCH_URL)
+        params: dict = {"maxPrice": MAX_PRICE, "minBedrooms": MIN_BEDROOMS}
+        if REQUIRE_POOL:
+            params["piscine"] = 1
+        resp = self._get(self._SEARCH_URL, params=params)
         if resp is None:
             return []
 

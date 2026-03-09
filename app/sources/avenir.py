@@ -3,7 +3,7 @@
 import logging
 import re
 
-from app.config import MAX_PRICE, MIN_BEDROOMS
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -15,17 +15,20 @@ class AvenirSource(BaseSource):
 
     name = "Avenir"
     tier = 2
+    pool_filtered_in_url = True  # Pool info not shown in listing cards; rely on area/city filtering
 
     _SEARCH_URL = "https://avenir-immobilier.be/fr/acheter/maison"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
-        params = {
+        params: dict = {
             "maxPrice": MAX_PRICE,
             "minBedrooms": MIN_BEDROOMS,
             "order": "date_desc",
         }
+        if REQUIRE_POOL:
+            params["piscine"] = 1
 
         for page in range(1, 3):
             params["page"] = page
