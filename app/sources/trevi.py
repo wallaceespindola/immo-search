@@ -3,7 +3,7 @@
 import logging
 import re
 
-from app.config import MAX_PRICE, MIN_BEDROOMS
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -15,18 +15,21 @@ class TreviSource(BaseSource):
 
     name = "Trevi"
     tier = 2
+    pool_filtered_in_url = True  # URL uses piscine=1 when REQUIRE_POOL
 
     _SEARCH_URL = "https://www.trevi.be/fr/acheter-bien-immobilier"
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
-        params = {
+        params: dict = {
             "type": "maison",
             "prix_max": MAX_PRICE,
             "chambres_min": MIN_BEDROOMS,
             "tri": "date_desc",
         }
+        if REQUIRE_POOL:
+            params["piscine"] = 1
 
         for page in range(1, 3):
             params["page"] = page

@@ -2,6 +2,7 @@
 
 import logging
 
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -26,10 +27,25 @@ class PPRSource(BaseSource):
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
+        params: dict = {
+            "tenantId": _TENANT_ID,
+            "language": "fr",
+            "purpose": "sale",
+            "limit": 50,
+            "WebIDName": "Villa/Woning/Hoeve",  # detached houses only
+        }
+        if MAX_PRICE:
+            params["MaxPrice"] = MAX_PRICE
+        if MIN_BEDROOMS:
+            params["MinBedRooms"] = MIN_BEDROOMS
+        if REQUIRE_POOL:
+            params["HasSwimmingPool"] = True
+
         for page in range(1, 4):
+            params["page"] = page
             resp = self._get(
                 _API_URL,
-                params={"tenantId": _TENANT_ID, "language": "fr", "purpose": "sale", "limit": 50, "page": page},
+                params=params,
                 headers={"Accept": "application/json", "Accept-Encoding": "identity"},
             )
             if resp is None:

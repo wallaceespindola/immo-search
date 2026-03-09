@@ -19,30 +19,34 @@ class ERASource(BaseSource):
 
     _SEARCH_URL = "https://www.era.be/fr/a-vendre"
 
+    # Target provinces: Brabant Wallon, Namur, Brabant Flamand
+    _PROVINCES = ["brabant-wallon", "namur", "brabant-flamand"]
+
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
-        params = {
-            "type": "house",
-            "transaction": "sale",
-            "max_price": MAX_PRICE,
-            "min_bedrooms": MIN_BEDROOMS,
-            "pool": 1,
-            "region": "wallonia",
-            "sort": "date-desc",
-        }
+        for province in self._PROVINCES:
+            params = {
+                "type": "house",
+                "transaction": "sale",
+                "max_price": MAX_PRICE,
+                "min_bedrooms": MIN_BEDROOMS,
+                "pool": 1,
+                "province": province,
+                "sort": "date-desc",
+            }
 
-        for page in range(1, 3):
-            params["page"] = page
-            resp = self._get(self._SEARCH_URL, params=params)
-            if resp is None:
-                break
+            for page in range(1, 3):
+                params["page"] = page
+                resp = self._get(self._SEARCH_URL, params=params)
+                if resp is None:
+                    break
 
-            soup = self._parse_html(resp.text)
-            page_listings = self._parse_results(soup)
-            if not page_listings:
-                break
-            listings.extend(page_listings)
+                soup = self._parse_html(resp.text)
+                page_listings = self._parse_results(soup)
+                if not page_listings:
+                    break
+                listings.extend(page_listings)
 
         return listings
 

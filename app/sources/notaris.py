@@ -22,7 +22,13 @@ class NotarisSource(BaseSource):
     pool_filtered_in_url = True  # URL already filters by pool
 
     _API_URL = "https://immo.notaris.be/api/properties"
-    _SEARCH_URL = "https://immo.notaris.be/fr/biens-a-vendre-dans-la-province/brabant-wallon?province=WBR"
+    _BASE_SEARCH_URL = "https://immo.notaris.be/fr/biens-a-vendre-dans-la-province"
+    # Province codes: WBR=Brabant Wallon, NAM=Namur, VBR=Brabant Flamand
+    _PROVINCES = [
+        ("brabant-wallon", "WBR"),
+        ("namur", "NAM"),
+        ("brabant-flamand", "VBR"),
+    ]
 
     def _fetch(self) -> list[Listing]:
         # Try JSON API first
@@ -69,10 +75,10 @@ class NotarisSource(BaseSource):
         return listings
 
     def _fetch_html(self) -> list[Listing]:
-        """Fall back to HTML scraping of notaris.be search results."""
+        """Fall back to HTML scraping of notaris.be search results across all three provinces."""
         listings: list[Listing] = []
 
-        params = {
+        base_params: dict = {
             "type": "maison",
             "transaction": "vente",
             "prix_max": MAX_PRICE,
@@ -81,17 +87,19 @@ class NotarisSource(BaseSource):
             "order": "date_desc",
         }
 
-        for page in range(1, 3):
-            params["page"] = page
-            resp = self._get(self._SEARCH_URL, params=params)
-            if resp is None:
-                break
+        for province_slug, province_code in self._PROVINCES:
+            url = f"{self._BASE_SEARCH_URL}/{province_slug}?province={province_code}"
+            for page in range(1, 3):
+                params = {**base_params, "page": page}
+                resp = self._get(url, params=params)
+                if resp is None:
+                    break
 
-            soup = self._parse_html(resp.text)
-            page_listings = self._parse_html_results(soup)
-            if not page_listings:
-                break
-            listings.extend(page_listings)
+                soup = self._parse_html(resp.text)
+                page_listings = self._parse_html_results(soup)
+                if not page_listings:
+                    break
+                listings.extend(page_listings)
 
         return listings
 

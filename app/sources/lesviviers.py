@@ -3,6 +3,7 @@
 import logging
 import re
 
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -20,8 +21,16 @@ class LesViviersSource(BaseSource):
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
+        base_params: dict = {
+            "type": "maison",
+            "prix_max": MAX_PRICE,
+            "chambres_min": MIN_BEDROOMS,
+        }
+        if REQUIRE_POOL:
+            base_params["piscine"] = 1
+
         for page in range(1, 3):
-            params = {"page": page}
+            params = {**base_params, "page": page}
             resp = self._get(self._SEARCH_URL, params=params)
             if resp is None:
                 break
