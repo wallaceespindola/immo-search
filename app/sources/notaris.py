@@ -41,7 +41,7 @@ class NotarisSource(BaseSource):
     def _fetch_api(self) -> list[Listing]:
         """Attempt to fetch via notaris.be JSON API."""
         listings: list[Listing] = []
-        postal_codes = TARGET_POSTAL_CODES[:20]
+        postal_codes = TARGET_POSTAL_CODES  # All 3 provinces: BW + Namur + VBR
 
         for page in range(1, 3):
             params = {

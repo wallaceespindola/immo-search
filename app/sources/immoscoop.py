@@ -3,6 +3,7 @@
 import json
 import logging
 
+from app.config import MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
@@ -14,23 +15,35 @@ class ImmoScoopSource(BaseSource):
 
     name = "Immoscoop"
     tier = 2
+    pool_filtered_in_url = True  # URL sends hasPool=true when REQUIRE_POOL
 
     _SEARCH_URL = "https://www.immoscoop.be/fr/chercher/a-vendre/maison"
     _BASE_URL = "https://www.immoscoop.be"
+    _PROVINCES = ["brabant-wallon", "namur", "brabant-flamand"]
 
     def _fetch(self) -> list[Listing]:
         listings: list[Listing] = []
 
-        for page in range(1, 3):
-            resp = self._get(self._SEARCH_URL, params={"page": page})
-            if resp is None:
-                break
+        params: dict = {
+            "maxPrice": MAX_PRICE,
+            "minBedrooms": MIN_BEDROOMS,
+        }
+        if REQUIRE_POOL:
+            params["hasPool"] = "true"
 
-            soup = self._parse_html(resp.text)
-            page_listings = self._parse_next_data(soup)
-            if not page_listings:
-                break
-            listings.extend(page_listings)
+        for province in self._PROVINCES:
+            province_params = {**params, "province": province}
+            for page in range(1, 3):
+                province_params["page"] = page
+                resp = self._get(self._SEARCH_URL, params=province_params)
+                if resp is None:
+                    break
+
+                soup = self._parse_html(resp.text)
+                page_listings = self._parse_next_data(soup)
+                if not page_listings:
+                    break
+                listings.extend(page_listings)
 
         return listings
 

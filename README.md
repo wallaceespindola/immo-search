@@ -1,10 +1,9 @@
 # 🏡 immo-search
 
-> **Personal Real Estate Hunter — Brabant Wallon, Belgium**
+> **Automated Real Estate Monitor — Belgium**
 >
-> Automated daily monitoring of 20 Belgian property websites.
-> Detects newly published detached houses with swimming pools matching strict criteria —
-> before the general market reacts.
+> Daily monitoring of Belgian property websites.
+> Detects newly published listings matching configurable criteria and sends email alerts.
 
 ---
 
@@ -21,16 +20,16 @@
 
 ## Overview
 
-**immo-search** is a local macOS automation tool that monitors **20 Belgian real estate websites** daily
-and sends an email alert when new properties matching your exact criteria appear on the market.
+**immo-search** is a local macOS automation tool that monitors Belgian real estate websites daily
+and sends an email alert when new properties matching your configured criteria appear on the market.
 
 | Feature | Details |
 |---|---|
-| **Target area** | Brabant Wallon · Province de Namur · Brabant Flamand |
-| **Property type** | 4-façades detached house only |
-| **Minimum bedrooms** | 4+ |
-| **Swimming pool** | Required |
-| **Max price** | €600,000 |
+| **Target area** | Configurable — Belgian regions / cities / postal codes |
+| **Property type** | Configurable — keywords-based filtering (FR + NL + EN) |
+| **Minimum bedrooms** | Configurable via `MIN_BEDROOMS` |
+| **Swimming pool** | Configurable via `REQUIRE_POOL` |
+| **Max price** | Configurable via `MAX_PRICE` |
 | **Notification** | HTML email via Gmail SMTP |
 | **Deduplication** | SQLite — no duplicate alerts |
 | **Scheduling** | macOS launchd at 07:30 daily |
@@ -276,7 +275,7 @@ GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 EMAIL_TO=your.email@gmail.com
 
 # Search criteria
-MAX_PRICE=600000
+MAX_PRICE=480000
 MIN_BEDROOMS=4
 REQUIRE_POOL=true
 REQUIRE_PARKING=false   # set true to only show listings with garage/parking

@@ -22,14 +22,24 @@ class ZimmoSource(BaseSource):
     tier = 1
     pool_filtered_in_url = True  # URL includes ?features=has_swimming_pool:true
 
-    # Region slugs that return results: city-level for BW, province-level for Namur + VBR
+    # Region slugs — city-level for BW, key Namur cities, province-level for VBR
     _REGION_URLS = [
+        # Brabant Wallon
         "https://www.zimmo.be/fr/wavre-1300/a-vendre/maison/",
         "https://www.zimmo.be/fr/ottignies-louvain-la-neuve-1340/a-vendre/maison/",
         "https://www.zimmo.be/fr/rixensart-1330/a-vendre/maison/",
         "https://www.zimmo.be/fr/la-hulpe-1310/a-vendre/maison/",
         "https://www.zimmo.be/fr/genval-1332/a-vendre/maison/",
-        "https://www.zimmo.be/fr/namur/a-vendre/maison/",
+        "https://www.zimmo.be/fr/waterloo-1410/a-vendre/maison/",
+        "https://www.zimmo.be/fr/braine-l-alleud-1420/a-vendre/maison/",
+        "https://www.zimmo.be/fr/nivelles-1400/a-vendre/maison/",
+        # Province de Namur
+        "https://www.zimmo.be/fr/namur-5000/a-vendre/maison/",
+        "https://www.zimmo.be/fr/gembloux-5030/a-vendre/maison/",
+        "https://www.zimmo.be/fr/floreffe-5150/a-vendre/maison/",
+        "https://www.zimmo.be/fr/profondeville-5170/a-vendre/maison/",
+        "https://www.zimmo.be/fr/dinant-5500/a-vendre/maison/",
+        # Brabant Flamand (bordering)
         "https://www.zimmo.be/fr/province-du-brabant-flamand/a-vendre/maison/",
     ]
 

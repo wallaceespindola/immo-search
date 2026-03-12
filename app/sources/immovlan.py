@@ -3,13 +3,11 @@
 import logging
 import re
 
-from app.config import EPC_RATINGS, MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL, TARGET_POSTAL_CODES
+from app.config import EPC_RATINGS, MAX_PRICE, MIN_BEDROOMS, REQUIRE_POOL
 from app.sources.base import BaseSource
 from app.storage import Listing
 
 logger = logging.getLogger(__name__)
-
-_POSTAL_CODES_STR = ",".join(TARGET_POSTAL_CODES[:30])
 
 
 class ImmovlanSource(BaseSource):
