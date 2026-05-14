@@ -24,7 +24,7 @@ dev = [
     "pytest-cov>=6.0.0",
     "ruff>=0.9.0",
     "black>=24.10.0",
-    "mypy>=1.14.0",
+    "mypy>=1.20.1",
     "types-requests>=2.32.0",
     "types-beautifulsoup4>=4.12.0",
 ]
