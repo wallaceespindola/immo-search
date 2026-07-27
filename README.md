@@ -36,7 +36,7 @@ and sends an email alert when new properties matching your configured criteria a
 
 ---
 
-## Monitored Sources — 20 Belgian Sites
+## Monitored Sources — 30 Belgian Sites
 
 ### Tier 1 — Core market coverage
 
@@ -59,6 +59,12 @@ and sends an email alert when new properties matching your configured criteria a
 | **Latour & Petit** | Premium Wallonia agency (BW focus) | HTML scraping |
 | **Notaris** | Belgian Notary Federation (official) | JSON API + HTML |
 | **Trevi** | Belgian agency active in Wallonia | HTML scraping |
+| **Promimo** | Brabant Wallon specialist agency | HTML scraping |
+| **Cap Sud** | Brussels & Wallonia agency network | HTML scraping |
+| **PPR (Parcours du Propriétaire)** | Bierges/Wavre agency | JSON API |
+| **ImmoBW** | Century 21 franchise, Wavre | HTML scraping |
+| **Avenir Immobilier** | Wavre & Namur region specialist | HTML scraping |
+| **Altis Immobilier** | Brabant Wallon agency since 2002 | HTML scraping |
 
 ### Tier 3 — Aggregators, luxury & classifieds
 
@@ -73,6 +79,9 @@ and sends an email alert when new properties matching your configured criteria a
 | **Vlan** | Belgian classifieds platform | HTML scraping |
 | **Athena Immo** | Premium Wallonia agency | HTML scraping |
 | **ImmoNeuf** | New-build / VEFA portal | HTML scraping |
+| **Engel & Völkers** | International luxury real estate network | HTML scraping |
+| **ImmoVillages** | Rural/village property portal | HTML scraping |
+| **Les Viviers** | Brabant Wallon & Namur agency | HTML scraping |
 
 ---
 
@@ -99,6 +108,12 @@ immo-search/
 │       ├── latouretpetit.py  # Tier 2
 │       ├── notaris.py        # Tier 2 — JSON API preferred
 │       ├── trevi.py          # Tier 2
+│       ├── promimo.py        # Tier 2
+│       ├── capsud.py         # Tier 2
+│       ├── ppr.py            # Tier 2 — JSON API
+│       ├── immobw.py         # Tier 2
+│       ├── avenir.py         # Tier 2
+│       ├── altis.py          # Tier 2
 │       ├── realo.py          # Tier 3
 │       ├── trovit.py         # Tier 3
 │       ├── erowz.py          # Tier 3
@@ -107,7 +122,10 @@ immo-search/
 │       ├── homeavenue.py     # Tier 3
 │       ├── vlan.py           # Tier 3
 │       ├── athena.py         # Tier 3
-│       └── immoneuf.py       # Tier 3
+│       ├── immoneuf.py       # Tier 3
+│       ├── engelvoelkers.py  # Tier 3
+│       ├── immovillages.py   # Tier 3
+│       └── lesviviers.py     # Tier 3
 ├── tests/
 │   ├── test_config.py
 │   ├── test_storage.py
@@ -130,7 +148,7 @@ immo-search/
 launchd (07:30) → run.sh → app/main.py
     │
     ├── init_db()                    # Ensure SQLite schema
-    ├── [for each of 20 sources]
+    ├── [for each of 30 sources]
     │   └── source.fetch_listings()  # HTTP → parse → validate
     ├── dedup + save_listing()       # Skip known IDs
     ├── generate_html_report()       # output/resultado_YYYY-MM-DD.html
