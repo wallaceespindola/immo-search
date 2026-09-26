@@ -20,6 +20,24 @@
 
 ---
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Monitored Sources — 30 Belgian Sites](#monitored-sources--30-belgian-sites)
+- [Architecture](#architecture)
+- [Scheduling — macOS launchd](#scheduling--macos-launchd)
+- [Technology Stack](#technology-stack)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Output](#output)
+- [Deduplication Strategy](#deduplication-strategy)
+- [Security](#security)
+- [Author](#author)
+- [License](#license)
+
+---
+
 ## Overview
 
 **immo-search** is a local macOS automation tool that monitors Belgian real estate websites daily
