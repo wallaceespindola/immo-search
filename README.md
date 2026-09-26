@@ -1,3 +1,5 @@
+![Python](https://www.python.org/static/community_logos/python-logo-generic.svg)
+
 # 🏡 immo-search
 
 > **Automated Real Estate Monitor — Belgium**
